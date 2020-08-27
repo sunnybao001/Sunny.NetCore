@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Sunny.NetCore.Extension": {
+      "commandName": "Project",
+      "nativeDebugging": false
+    }
+  }
+}
