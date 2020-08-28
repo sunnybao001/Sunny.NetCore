@@ -43,8 +43,7 @@ namespace Sunny.NetCore.Extension.Converter
 		private unsafe long IntToUtf8_8(int value)
 		{
 			var shuffle = Ssse3.Shuffle(*(Vector128<sbyte>*)&value, ShuffleMask);
-			var vector = (((*(long*)&shuffle & HeightMask) >> 4) | ((*(long*)&shuffle & LowMask) << 8)) + ShortCharA;
-			return vector;
+			return (((*(long*)&shuffle & HeightMask) >> 4) | ((*(long*)&shuffle & LowMask) << 8)) + ShortCharA;
 		}
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private unsafe bool TryParseInt(long input, out int value)

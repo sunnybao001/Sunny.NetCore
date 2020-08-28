@@ -11,6 +11,7 @@ namespace Sunny.NetCore.Extension.Converter
 {
 	partial class DateFormat
 	{
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private unsafe bool Utf8_10ToDate(in Vector128<sbyte> input, out DateTime value)
 		{
 			var vector = Ssse3.Shuffle(input, TDShuffleMask1);
@@ -20,6 +21,7 @@ namespace Sunny.NetCore.Extension.Converter
 			value = new DateTime(vf[0] * 100 + vf[1], vf[2], vf[3]);
 			return true;
 		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private unsafe bool Utf8_19ToDate(in Vector256<sbyte> input, out DateTime value)
 		{
 			var vector = Avx2.PermuteVar8x32(Avx2.Shuffle(input, TDShuffleMask).AsInt32(), Permute);
@@ -29,6 +31,7 @@ namespace Sunny.NetCore.Extension.Converter
 			value = new DateTime(vf[0] * 100 + vf[1], vf[2], vf[3], vf[4], vf[5], vf[6]);
 			return true;
 		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private unsafe bool Utf8Bit2ToNumber(long input, out long value)
 		{
 			value = default;
@@ -37,6 +40,7 @@ namespace Sunny.NetCore.Extension.Converter
 			value = Sse41.X64.Extract(Ssse3.HorizontalAdd(Sse2.MultiplyLow(vector, Int101), default).AsInt64(), 0);  //双数位置的乘数为0，所以不用担心short溢出
 			return true;
 		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private unsafe bool Utf8Bit2ToNumber(ref Vector128<sbyte> input, out Vector128<short> value)
 		{
 			value = default;

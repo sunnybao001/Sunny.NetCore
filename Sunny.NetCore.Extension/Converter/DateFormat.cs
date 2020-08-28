@@ -21,7 +21,7 @@ namespace Sunny.NetCore.Extension.Converter
 			SbyteMax1 = Avx2.ExtractVector128(SbyteMax, 0);
 			ShortN151 = Avx2.ExtractVector128(ShortN15, 0);
 		}
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public override unsafe DateTime Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
 		{
 			var s = reader.ValueSpan;
