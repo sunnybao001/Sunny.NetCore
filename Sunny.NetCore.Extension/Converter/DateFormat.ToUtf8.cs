@@ -53,8 +53,7 @@ namespace Sunny.NetCore.Extension.Converter
 		private unsafe long NumberToUtf8Bit2(in Vector128<int> numbers)
 		{
 			var vector = Sse2.And(Sse2.ShiftRightLogical(Sse2.MultiplyLow(Sse2.And(Sse2.Or(numbers, Sse2.ShiftLeftLogical(numbers, 16)).AsInt16(), SbyteMax1), ShortBit2X10Vector1), 7), SbyteMax1);
-			var output = Sse2.PackUnsignedSaturate(Sse2.Add(Sse2.Subtract(vector, Sse2.MultiplyLow(Sse2.And(Sse2.ShiftRightLogical(Sse2.MultiplyLow(vector, ShortD1), 7), SbyteMax1), Short101)), ShortChar01), default);
-			return *(long*)&output;
+			return Sse41.X64.Extract(Sse2.PackUnsignedSaturate(Sse2.Add(Sse2.Subtract(vector, Sse2.MultiplyLow(Sse2.And(Sse2.ShiftRightLogical(Sse2.MultiplyLow(vector, ShortD1), 7), SbyteMax1), Short101)), ShortChar01), default).AsInt64(), 0);
 		}
 		//最多输入8个数字，输出16个结果，每个数字最大值不能超过255。
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -22,8 +22,7 @@ namespace Sunny.NetCore.Extension.Converter
 		}
 		private unsafe bool Utf8_19ToDate(in Vector256<sbyte> input, out DateTime value)
 		{
-			var vector = Avx2.Shuffle(input, TDShuffleMask);
-			((int*)&vector)[3] = ((int*)&vector)[4];	//多拷贝2个字节是为了让后面的TestZ不报错
+			var vector = Avx2.PermuteVar8x32(Avx2.Shuffle(input, TDShuffleMask).AsInt32(), Permute);
 			value = default;
 			if (!Utf8Bit2ToNumber(ref *(Vector128<sbyte>*)&vector, out var v)) return false;
 			var vf = (short*)&v;
@@ -35,9 +34,7 @@ namespace Sunny.NetCore.Extension.Converter
 			value = default;
 			var vector = Sse2.Subtract(Sse41.ConvertToVector128Int16((sbyte*)&input), ShortChar01);
 			if (!Sse41.TestZ(vector, ShortN151)) return false;
-			vector = Sse2.MultiplyLow(vector, Int101);  //双数位置的乘数为0，所以不用担心short溢出
-			vector = Ssse3.HorizontalAdd(vector, default);
-			value = *(long*)&vector;
+			value = Sse41.X64.Extract(Ssse3.HorizontalAdd(Sse2.MultiplyLow(vector, Int101), default).AsInt64(), 0);  //双数位置的乘数为0，所以不用担心short溢出
 			return true;
 		}
 		private unsafe bool Utf8Bit2ToNumber(ref Vector128<sbyte> input, out Vector128<short> value)
@@ -45,13 +42,13 @@ namespace Sunny.NetCore.Extension.Converter
 			value = default;
 			var vector = Avx2.Subtract(Avx2.ConvertToVector256Int16(input), ShortChar0);
 			if (!Avx.TestZ(vector, ShortN15)) return false;
-			vector = Avx2.MultiplyLow(vector, Int10);  //双数位置的乘数为0，所以不用担心short溢出
-			value = Ssse3.HorizontalAdd(*(Vector128<short>*)&vector, ((Vector128<short>*)&vector)[1]);
+			value = Avx2.ExtractVector128(Avx2.Permute4x64(Avx2.HorizontalAdd(Avx2.MultiplyLow(vector, Int10), default).AsInt64(), 0b11011000).AsInt16(), 0);  //双数位置的乘数为0，所以不用担心short溢出
 			return true;
 		}
 		private Vector256<short> Int10 = Vector256.Create(10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1);
 		private Vector128<short> Int101;
 		private Vector256<sbyte> TDShuffleMask = Vector256.Create(0, 1, 2, 3, 5, 6, 8, 9, 11, 12, 14, 15, -1, -1, -1, -1, 1, 2, 1, 2, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1);
+		private Vector256<int> Permute = Vector256.Create(0, 1, 2, 4, 3, 3, 3, 3);
 		private Vector128<sbyte> TDShuffleMask1 = Vector128.Create(0, 1, 2, 3, 5, 6, 8, 9, -1, -1, -1, -1, -1, -1, -1, -1);
 		private Vector256<short> ShortN15 = Vector256.Create((sbyte)~15).AsInt16();
 		private Vector128<short> ShortN151;

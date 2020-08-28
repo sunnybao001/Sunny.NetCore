@@ -51,8 +51,7 @@ namespace Sunny.NetCore.Extension.Converter
 			value = default;
 			var vector = Sse2.Subtract(input, ShortCharA);
 			if (!Sse41.TestZ(vector, ShortN15)) return false;
-			var output = Ssse3.Shuffle(Sse2.Or(Sse2.ShiftLeftLogical(vector, 4), Sse2.ShiftRightLogical(vector, 8)).AsSByte(), NShuffleMask);
-			value = *(long*)&output;
+			value = Sse41.X64.Extract(Ssse3.Shuffle(Sse2.Or(Sse2.ShiftLeftLogical(vector, 4), Sse2.ShiftRightLogical(vector, 8)).AsSByte(), NShuffleMask).AsInt64(), 0);
 			return true;
 		}
 		private Vector128<short> ShortCharA = Unsafe.As<Vector256<short>, Vector128<short>>(ref GuidInterface.Singleton.ShortCharA);

@@ -56,8 +56,7 @@ namespace Sunny.NetCore.Extension.Converter
 			if (!Avx.TestZ(vector, ShortN15)) return false;
 			vector = Avx2.And(Avx2.Or(Avx2.ShiftLeftLogical(vector, 4), Avx2.ShiftRightLogical(vector, 8)), FFMask);
 			var vectorf = (Vector128<short>*)&vector;
-			var output = Sse2.PackUnsignedSaturate(vectorf[0], vectorf[1]);
-			value = *(Guid*)&output;
+			Unsafe.As<Guid, Vector128<byte>>(ref value) = Sse2.PackUnsignedSaturate(vectorf[0], vectorf[1]);
 			return true;
 		}
 		//使用静态成员变量造成CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE
