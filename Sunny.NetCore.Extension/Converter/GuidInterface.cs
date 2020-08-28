@@ -59,11 +59,10 @@ namespace Sunny.NetCore.Extension.Converter
 			Unsafe.As<Guid, Vector128<byte>>(ref value) = Sse2.PackUnsignedSaturate(vectorf[0], vectorf[1]);
 			return true;
 		}
-		//使用静态成员变量造成CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE
+		//使用静态成员变量会造成CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE
 		internal Vector256<short> ShortCharA = Vector256.Create((sbyte)'A').AsInt16();
 		internal Vector256<short> ShortN15 = Vector256.Create((sbyte)~15).AsInt16();
 		internal Vector256<short> LowMask = Vector256.Create((short)15);
-		internal Vector256<short> HeightMask = Vector256.Create((short)0xF0);
 		internal Vector256<short> FFMask = Vector256.Create((short)0xFF);
 	}
 }

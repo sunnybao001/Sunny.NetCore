@@ -13,13 +13,13 @@ namespace Sunny.NetCore.Extension.Converter
 	{
 		public static readonly DateFormat Singleton = new DateFormat();
 		private DateFormat() {
-			ShortChar01 = Unsafe.As<Vector256<short>, Vector128<short>>(ref ShortChar0);
-			ShortD1 = Unsafe.As<Vector256<short>, Vector128<short>>(ref ShortD);
-			ShortBit2X10Vector1 = Unsafe.As<Vector256<short>, Vector128<short>>(ref ShortBit2X10Vector);
-			Int101 = Unsafe.As<Vector256<short>, Vector128<short>>(ref Int10);
-			Short101 = Unsafe.As<Vector256<short>, Vector128<short>>(ref Short10);
-			SbyteMax1 = Unsafe.As<Vector256<short>, Vector128<short>>(ref SbyteMax);
-			ShortN151 = Unsafe.As<Vector256<short>, Vector128<short>>(ref ShortN15);
+			ShortChar01 = Avx2.ExtractVector128(ShortChar0, 0);
+			ShortD1 = Avx2.ExtractVector128(ShortD, 0);
+			ShortBit2X10Vector1 = Avx2.ExtractVector128(ShortBit2X10Vector, 0);
+			Int101 = Avx2.ExtractVector128(Int10, 0);
+			Short101 = Avx2.ExtractVector128(Short10, 0);
+			SbyteMax1 = Avx2.ExtractVector128(SbyteMax, 0);
+			ShortN151 = Avx2.ExtractVector128(ShortN15, 0);
 		}
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public override unsafe DateTime Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)

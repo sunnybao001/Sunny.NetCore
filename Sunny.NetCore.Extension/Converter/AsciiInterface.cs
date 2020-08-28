@@ -36,6 +36,5 @@ namespace Sunny.NetCore.Extension.Converter
 			output[1] = Avx2.ConvertToVector256Int16(vectorf[1]);
 		}
 		private Vector256<short> AsciiMax = Vector256.Create((short)sbyte.MaxValue);
-		private Vector256<short> NAsciiMax = Vector256.Create((short)~sbyte.MaxValue);
 	}
 }

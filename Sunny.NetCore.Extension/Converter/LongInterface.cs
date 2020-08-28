@@ -54,10 +54,10 @@ namespace Sunny.NetCore.Extension.Converter
 			value = Sse41.X64.Extract(Ssse3.Shuffle(Sse2.Or(Sse2.ShiftLeftLogical(vector, 4), Sse2.ShiftRightLogical(vector, 8)).AsSByte(), NShuffleMask).AsInt64(), 0);
 			return true;
 		}
-		private Vector128<short> ShortCharA = Unsafe.As<Vector256<short>, Vector128<short>>(ref GuidInterface.Singleton.ShortCharA);
-		private Vector128<short> ShortN15 = Unsafe.As<Vector256<short>, Vector128<short>>(ref GuidInterface.Singleton.ShortN15);
-		private Vector128<short> LowMask = Unsafe.As<Vector256<short>, Vector128<short>>(ref GuidInterface.Singleton.LowMask);
-		private Vector128<short> HeightMask = Unsafe.As<Vector256<short>, Vector128<short>>(ref GuidInterface.Singleton.HeightMask);
+		internal Vector128<short> ShortCharA = Avx2.ExtractVector128(GuidInterface.Singleton.ShortCharA, 0);
+		internal Vector128<short> ShortN15 = Avx2.ExtractVector128(GuidInterface.Singleton.ShortN15, 0);
+		internal Vector128<short> LowMask = Avx2.ExtractVector128(GuidInterface.Singleton.LowMask, 0);
+		internal Vector128<short> HeightMask = Vector128.Create((short)0xF0);
 		private readonly Vector128<sbyte> ShuffleMask = Vector128.Create(7, -1, 6, -1, 5, -1, 4, -1, 3, -1, 2, -1, 1, -1, 0, -1);
 		private readonly Vector128<sbyte> NShuffleMask = Vector128.Create(14, 12, 10, 8, 6, 4, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 	}
