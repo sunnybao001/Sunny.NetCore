@@ -49,12 +49,13 @@ namespace Sunny.NetCore.Extension.Converter
 			return Avx2.Shuffle(vector, TUShuffleMask).AsByte();
 		}
 		//最多输入4个数字，输出8个结果，每个数字最大值不能超过255。
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private unsafe long NumberToUtf8Bit2(in Vector128<int> numbers)
-		{
-			var vector = Sse2.And(Sse2.ShiftRightLogical(Sse2.MultiplyLow(Sse2.And(Sse2.Or(numbers, Sse2.ShiftLeftLogical(numbers, 16)).AsInt16(), SbyteMax1), ShortBit2X10Vector1), 7), SbyteMax1);
-			return Sse41.X64.Extract(Sse2.PackUnsignedSaturate(Sse2.Add(Sse2.Subtract(vector, Sse2.MultiplyLow(Sse2.And(Sse2.ShiftRightLogical(Sse2.MultiplyLow(vector, ShortD1), 7), SbyteMax1), Short101)), ShortChar01), default).AsInt64(), 0);
-		}
+		//[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		//private unsafe long NumberToUtf8Bit2(in Vector128<int> numbers)
+		//{
+		//	var vector = Sse2.And(Sse2.ShiftRightLogical(Sse2.MultiplyLow(Sse2.And(Sse2.Or(numbers, Sse2.ShiftLeftLogical(numbers, 16)).AsInt16(), SbyteMax1), ShortBit2X10Vector1), 7), SbyteMax1);
+		//	return Sse41.X64.Extract(Sse2.PackUnsignedSaturate(Sse2.Add(Sse2.Subtract(vector, Sse2.MultiplyLow(Sse2.And(Sse2.ShiftRightLogical(Sse2.MultiplyLow(vector, ShortD1), 7), SbyteMax1), Short101)), ShortChar01), default).AsInt64(), 0);
+		//}
+		protected abstract long NumberToUtf8Bit2(in Vector128<int> numbers);
 		//最多输入8个数字，输出16个结果，每个数字最大值不能超过255。
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private unsafe Vector128<byte> NumberToUtf8Bit2(in Vector256<int> numbers)
@@ -65,9 +66,9 @@ namespace Sunny.NetCore.Extension.Converter
 			return Sse2.PackUnsignedSaturate(vectorf[0], vectorf[1]);
 		}
 		private Vector256<short> Short10 = Vector256.Create((short)10);
-		private Vector128<short> Short101;
+		protected readonly Vector128<short> Short101;
 		private Vector256<short> SbyteMax = Vector256.Create((short)sbyte.MaxValue);
-		private Vector128<short> SbyteMax1;
+		protected readonly Vector128<short> SbyteMax1;
 		private Vector256<sbyte> TUShuffleMask = Vector256.Create(0, 1, 2, 3, 12, 4, 5, 12, 6, 7, 13, 8, 9, 14, 10, 11, 2, 0, 1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 		private Vector128<sbyte> TUShuffleMask1 = Vector128.Create(0, 1, 2, 3, 8, 4, 5, 8, 6, 7, -1, -1, -1, -1, -1, -1);
 	}

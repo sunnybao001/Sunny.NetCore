@@ -10,8 +10,9 @@ namespace Sunny.NetCore.Extension.TestC
 		{
 			Console.WriteLine("Hello World!");
 
-			TestGUID();
-			//TestDateTime();
+			TestLong();
+			//TestGUID();
+			TestDateTime();
 			TestInt();
 		}
 		public static void TestGUID()
@@ -82,6 +83,13 @@ namespace Sunny.NetCore.Extension.TestC
 			var str = IntInterface.Singleton.IntToString(i);
 			IntInterface.Singleton.TryParseInt(str, out var ni);
 			//Assert.AreEqual(i, ni);
+		}
+		public static void TestLong()
+		{
+			var l = Generator.LongValueGenerator.NextValue();
+			var str = LongInterface.Singleton.LongToString(l);
+			LongInterface.Singleton.TryParseLong(str, out var nl);
+			//Assert.AreEqual(l, nl);
 		}
 	}
 }

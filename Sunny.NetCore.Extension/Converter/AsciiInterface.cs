@@ -36,5 +36,6 @@ namespace Sunny.NetCore.Extension.Converter
 			output[1] = Avx2.ConvertToVector256Int16(vectorf[1]);
 		}
 		private Vector256<short> AsciiMax = Vector256.Create((short)sbyte.MaxValue);
+		public static readonly System.Reflection.Emit.ModuleBuilder ModuleBuilder = System.Reflection.Emit.AssemblyBuilder.DefineDynamicAssembly(new System.Reflection.AssemblyName("Sunny.NetCore.Extrnsion.Emit"), System.Reflection.Emit.AssemblyBuilderAccess.Run).DefineDynamicModule("Converter");
 	}
 }
