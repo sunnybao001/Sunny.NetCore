@@ -107,10 +107,9 @@ namespace Sunny.NetCore.Extension.Converter
 				new Type[][] { Type.EmptyTypes, Type.EmptyTypes },
 				new Type[][] { Type.EmptyTypes, Type.EmptyTypes });
 
-			method.SetCustomAttribute(new System.Reflection.Emit.CustomAttributeBuilder(typeof(MethodImplAttribute).GetConstructor(new Type[] { typeof(MethodImplOptions) }), new object[] { MethodImplOptions.AggressiveInlining }));
+			method.SetCustomAttribute(new CustomAttributeBuilder(typeof(MethodImplAttribute).GetConstructor(new Type[] { typeof(MethodImplOptions) }), new object[] { MethodImplOptions.AggressiveInlining }));
 			var il = method.GetILGenerator();
-			var loc0 = il.DeclareLocal(typeof(Vector128<short>));
-			var loc1 = il.DeclareLocal(typeof(bool));
+			var loc0 = il.DeclareLocal(typeof(bool));
 			il.Emit(OpCodes.Ldarg_2);//1
 			il.Emit(OpCodes.Ldarga_S, 1);//2
 			il.EmitCall(OpCodes.Call, typeof(Sse41).GetMethod(nameof(Sse41.ConvertToVector128Int16), new Type[] { typeof(sbyte*) }), null);
@@ -121,8 +120,6 @@ namespace Sunny.NetCore.Extension.Converter
 			il.Emit(OpCodes.Ldarg_0);//4
 			il.Emit(OpCodes.Ldfld, typeof(DateFormat).GetField(nameof(ShortN151), System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic));//4
 			il.EmitCall(OpCodes.Call, typeof(Sse41).GetMethod(nameof(Sse41.TestZ), new Type[] { typeof(Vector128<short>), typeof(Vector128<short>) }), null);//3
-			il.Emit(OpCodes.Stloc_1);//2
-			il.Emit(OpCodes.Dup);//3
 			il.Emit(OpCodes.Stloc_0);//2
 			il.Emit(OpCodes.Ldarg_0);//3
 			il.Emit(OpCodes.Ldfld, typeof(DateFormat).GetField(nameof(Int101), System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic));
@@ -137,13 +134,13 @@ namespace Sunny.NetCore.Extension.Converter
 			}
 			else
 			{
-				var loc2 = il.DeclareLocal(typeof(Vector128<sbyte>));
-				il.Emit(OpCodes.Stloc_2);//1
-				il.Emit(OpCodes.Ldloca_S, 2);//2
+				var loc1 = il.DeclareLocal(typeof(Vector128<sbyte>));
+				il.Emit(OpCodes.Stloc_1);//1
+				il.Emit(OpCodes.Ldloca_S, 1);//2
 				il.Emit(OpCodes.Ldind_I8);//2
 			}
 			il.Emit(OpCodes.Stind_I8);//0
-			il.Emit(OpCodes.Ldloc_1);
+			il.Emit(OpCodes.Ldloc_0);
 			il.Emit(OpCodes.Ret);
 
 			method = type.DefineMethod(nameof(NumberToUtf8Bit2),
