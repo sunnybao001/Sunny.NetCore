@@ -1,9 +1,13 @@
-﻿using Microsoft.EntityFrameworkCore.ChangeTracking;
+﻿
+using Sunny.NetCore.Extension.Converter;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Globalization;
 using System.Linq;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using System.Text.Json;
@@ -11,11 +15,45 @@ using System.Threading.Tasks;
 
 namespace Sunny.NetCore.Extension.Generator
 {
-	public class LongValueGenerator : Microsoft.EntityFrameworkCore.ValueGeneration.ValueGenerator
+	public static class LongValueGenerator
 	{
-		public override bool GeneratesTemporaryValues => false;
+		public static T RegisterEfCoreValueGenerator<T>(T propertyBuilder) where T : class
+		{
+			if (EfCoreValueGeneratorMethod == null)
+			{
+				var efAssembly = propertyBuilder.GetType().Assembly;
+				var type = AsciiInterface.ModuleBuilder.DefineType(nameof(LongValueGenerator), TypeAttributes.Sealed, efAssembly.GetType("Microsoft.EntityFrameworkCore.ValueGeneration.ValueGenerator"));
+				var method = type.DefineMethod("NextValue",
+					MethodAttributes.Family | MethodAttributes.Virtual | MethodAttributes.HideBySig,
+					CallingConventions.Standard | CallingConventions.HasThis,
+					typeof(object),
+					new Type[] { efAssembly.GetType("Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry") });
+				method.SetCustomAttribute(new CustomAttributeBuilder(typeof(MethodImplAttribute).GetConstructor(new Type[] { typeof(MethodImplOptions) }), new object[] { MethodImplOptions.AggressiveInlining }));
+				var il = method.GetILGenerator();
+				il.EmitCall(OpCodes.Call, typeof(LongValueGenerator).GetMethod(nameof(NextValue)), null);
+				il.Emit(OpCodes.Box, typeof(long));
+				il.Emit(OpCodes.Ret);
 
-		protected override object NextValue(EntityEntry entry) => NextValue();
+				var property = type.DefineProperty("GeneratesTemporaryValues", PropertyAttributes.None, typeof(bool), null);
+
+				method = type.DefineMethod("get_GeneratesTemporaryValues",
+					MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.SpecialName | MethodAttributes.HideBySig,
+					CallingConventions.Standard | CallingConventions.HasThis,
+					typeof(bool),
+					Type.EmptyTypes);
+				il = method.GetILGenerator();
+				il.Emit(OpCodes.Ldc_I4_0);
+				il.Emit(OpCodes.Ret);
+
+				property.SetGetMethod(method);
+				var gType = type.CreateType();
+				EfCoreValueGeneratorMethod = propertyBuilder.GetType().GetMethod("HasValueGenerator", Type.EmptyTypes).MakeGenericMethod(gType);
+			}
+			return (T)EfCoreValueGeneratorMethod.Invoke(propertyBuilder, null);
+		}
+		//public override bool GeneratesTemporaryValues => false;
+
+		//protected override object NextValue(EntityEntry entry) => NextValue();
 		public static long NextValue() => GetId(DateTime.UtcNow.Ticks);
 		public static long OldToNewId(long old)
 		{
@@ -55,5 +93,6 @@ namespace Sunny.NetCore.Extension.Generator
 			f[0] = f[1] = f[2] = 0;
 			return id;
 		}
+		private static MethodInfo EfCoreValueGeneratorMethod;
 	}
 }
