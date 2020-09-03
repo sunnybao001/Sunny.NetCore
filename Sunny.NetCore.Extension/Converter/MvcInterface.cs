@@ -34,31 +34,17 @@ namespace Sunny.NetCore.Extension.Converter
 				contextReturn,
 				new Type[] { contextParam });
 			var il = method.GetILGenerator();
+			var loc0 = il.DeclareLocal(typeof(Guid));
 			il.Emit(OpCodes.Ldarg_1);
 			var metadataGetMethod = contextParam.GetProperty("Metadata").GetGetMethod();
 			il.EmitCall(OpCodes.Callvirt, metadataGetMethod, null);
 			il.EmitCall(OpCodes.Call, metadataGetMethod.ReturnType.GetProperty("ModelType").GetGetMethod(), null);
 			il.EmitCall(OpCodes.Callvirt, typeof(Type).GetProperty(nameof(Type.GUID)).GetGetMethod(), null);
 			il.Emit(OpCodes.Dup);
-			il.Emit(OpCodes.Ldarg_0);
-			il.Emit(OpCodes.Ldfld, longguidF);
-			il.EmitCall(OpCodes.Call, typeof(Guid).GetMethod("op_Equality", new Type[] { typeof(Guid), typeof(Guid) }), null);
-			var label = il.DefineLabel();
-			il.Emit(OpCodes.Brfalse_S, label);
-			il.Emit(OpCodes.Pop);
-			il.Emit(OpCodes.Ldarg_0);
-			il.Emit(OpCodes.Ldfld, longModelBiner);
-			il.Emit(OpCodes.Ret);
-			il.MarkLabel(label);
-			il.Emit(OpCodes.Ldarg_0);
-			il.Emit(OpCodes.Ldfld, guidguidF);
-			il.EmitCall(OpCodes.Call, typeof(Guid).GetMethod("op_Equality", new Type[] { typeof(Guid), typeof(Guid) }), null);
-			label = il.DefineLabel();
-			il.Emit(OpCodes.Brfalse_S, label);
-			il.Emit(OpCodes.Ldarg_0);
-			il.Emit(OpCodes.Ldfld, guidModelBiner);
-			il.Emit(OpCodes.Ret);
-			il.MarkLabel(label);
+			il.Emit(OpCodes.Stloc_0);
+			EqualityTypeGuid(il, longguidF, longModelBiner);
+			il.Emit(OpCodes.Ldloc_0);
+			EqualityTypeGuid(il, guidguidF, guidModelBiner);
 			il.Emit(OpCodes.Ldnull);
 			il.Emit(OpCodes.Ret);
 			type.DefineMethodOverride(method, interfaceMethod);
@@ -69,21 +55,26 @@ namespace Sunny.NetCore.Extension.Converter
 			type0.GetField("guidguid", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(providers, typeof(Guid).GUID);
 			type0.GetField("LongModelBiner", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(providers, GenerateModelBiner<LongInterface, long>(contextReturn));
 			type0.GetField("GuidModelBiner", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(providers, GenerateModelBiner<GuidInterface, Guid>(contextReturn));
-			//providers.longguid = typeof(long).GUID;
-			//providers.guidguid = typeof(Guid).GUID;
-			//providers.LongModelBiner = GenerateModelBiner<LongInterface, long>(contextReturn);
-			//providers.guidModelBiner = GenerateModelBiner<GuidInterface, Guid>(contextReturn);
-			//longguidF.SetValue(providers, typeof(long).GUID);
-			//guidguidF.SetValue(providers, typeof(Guid).GUID);
-			//longModelBiner.SetValue(providers, GenerateModelBiner<LongInterface, long>(contextReturn));
-			//guidModelBiner.SetValue(providers, GenerateModelBiner<GuidInterface, Guid>(contextReturn));
 
 			modelBinderProviders.Insert(0, providers);
+		}
+		private static void EqualityTypeGuid(ILGenerator il, FieldBuilder guidField, FieldBuilder binerField)
+		{
+			il.Emit(OpCodes.Ldarg_0);
+			il.Emit(OpCodes.Ldfld, guidField);
+			il.EmitCall(OpCodes.Call, typeof(Guid).GetMethod("op_Equality", new Type[] { typeof(Guid), typeof(Guid) }), null);
+			var label = il.DefineLabel();
+			il.Emit(OpCodes.Brfalse_S, label);
+			il.Emit(OpCodes.Ldarg_0);
+			il.Emit(OpCodes.Ldfld, binerField);
+			il.Emit(OpCodes.Ret);
+			il.MarkLabel(label);
 		}
 		private static object GenerateModelBiner<T, TR>(Type modelBinderInterface)
 		{
 			var type = AsciiInterface.ModuleBuilder.DefineType(typeof(T).Name + "_Biner", TypeAttributes.Sealed, null, new Type[] { modelBinderInterface });
 			var converterF = type.DefineField("Converter", typeof(T), FieldAttributes.Private);
+			var completedTaskF = type.DefineField("CompletedTask", typeof(Task), FieldAttributes.Private);
 
 			var bindingInterfaceMethod = modelBinderInterface.GetMethod("BindModelAsync");
 			var bindingParam = bindingInterfaceMethod.GetParameters()[0].ParameterType;
@@ -110,7 +101,8 @@ namespace Sunny.NetCore.Extension.Converter
 			var label = il.DefineLabel();
 			il.Emit(OpCodes.Brfalse_S, label);//1
 			il.Emit(OpCodes.Pop);//0
-			il.EmitCall(OpCodes.Call, typeof(Task).GetProperty(nameof(Task.CompletedTask)).GetGetMethod(), null);
+			il.Emit(OpCodes.Ldarg_0);
+			il.Emit(OpCodes.Ldfld, completedTaskF);
 			il.Emit(OpCodes.Ret);
 			il.MarkLabel(label);
 			var loc2 = il.DeclareLocal(getValueMethod.ReturnType);
@@ -131,7 +123,8 @@ namespace Sunny.NetCore.Extension.Converter
 			il.Emit(OpCodes.Brfalse_S, label);//2
 			il.Emit(OpCodes.Pop);//1
 			il.Emit(OpCodes.Pop);//0
-			il.EmitCall(OpCodes.Call, typeof(Task).GetProperty(nameof(Task.CompletedTask)).GetGetMethod(), null);
+			il.Emit(OpCodes.Ldarg_0);
+			il.Emit(OpCodes.Ldfld, completedTaskF);
 			il.Emit(OpCodes.Ret);
 			il.MarkLabel(label);
 			il.Emit(OpCodes.Ldloca_S, 1);//3
@@ -144,7 +137,8 @@ namespace Sunny.NetCore.Extension.Converter
 			il.Emit(OpCodes.Ldstr, $"Author value must be an {typeof(TR).Name}.");//3
 			il.EmitCall(OpCodes.Call, getModelStateMethod.ReturnType.GetMethod("TryAddModelError", new Type[] { typeof(string), typeof(string) }), null);//1
 			il.Emit(OpCodes.Pop);//0
-			il.EmitCall(OpCodes.Call, typeof(Task).GetProperty(nameof(Task.CompletedTask)).GetGetMethod(), null);
+			il.Emit(OpCodes.Ldarg_0);
+			il.Emit(OpCodes.Ldfld, completedTaskF);
 			il.Emit(OpCodes.Ret);
 			il.MarkLabel(label);
 			il.Emit(OpCodes.Ldarg_1);//1
@@ -153,13 +147,15 @@ namespace Sunny.NetCore.Extension.Converter
 			var setResultMethod = bindingParam.GetProperty("Result").GetSetMethod();
 			il.EmitCall(OpCodes.Call, setResultMethod.GetParameters()[0].ParameterType.GetMethod("Success", BindingFlags.Public | BindingFlags.Static), null);//2
 			il.EmitCall(OpCodes.Callvirt, setResultMethod, null);//0
-			il.EmitCall(OpCodes.Call, typeof(Task).GetProperty(nameof(Task.CompletedTask)).GetGetMethod(), null);
+			il.Emit(OpCodes.Ldarg_0);
+			il.Emit(OpCodes.Ldfld, completedTaskF);
 			il.Emit(OpCodes.Ret);
 			type.DefineMethodOverride(method, bindingInterfaceMethod);
 
 			var type0 = type.CreateType();
 			var modelBiner = Activator.CreateInstance(type0);
 			type0.GetField("Converter", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(modelBiner, typeof(T).GetField("Singleton", BindingFlags.Public | BindingFlags.Static).GetValue(null));
+			type0.GetField("CompletedTask", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(modelBiner, Task.CompletedTask);
 			return modelBiner;
 		}
 	}
