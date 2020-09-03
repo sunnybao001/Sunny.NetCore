@@ -36,7 +36,7 @@ namespace Sunny.NetCore.Extension.Converter
 			return new string((char*)f, 0, 32);
 		}
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public unsafe bool TryParseGuid(string str, out Guid value)
+		public unsafe bool TryParse(string str, out Guid value)
 		{
 			var vector = AsciiInterface.Singleton.UnicodeToAscii_32(ref Unsafe.As<char, Vector256<short>>(ref Unsafe.AsRef(in str.GetPinnableReference()))).AsInt16();
 			return TryParseGuid(in vector, out value);

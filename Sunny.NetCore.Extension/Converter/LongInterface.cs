@@ -31,7 +31,7 @@ namespace Sunny.NetCore.Extension.Converter
 			writer.WriteStringValue(new ReadOnlySpan<byte>(&vector, 16));
 		}
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public unsafe bool TryParseLong(string str, out long value)
+		public unsafe bool TryParse(string str, out long value)
 		{
 			var vector = AsciiInterface.Singleton.UnicodeToAscii_16(in Unsafe.As<char, Vector256<short>>(ref Unsafe.AsRef(in str.GetPinnableReference()))).AsInt16();
 			return TryParseLong(in vector, out value);

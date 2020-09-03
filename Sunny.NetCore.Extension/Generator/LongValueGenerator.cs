@@ -17,11 +17,16 @@ namespace Sunny.NetCore.Extension.Generator
 {
 	public static class LongValueGenerator
 	{
+		/// <summary>
+		/// 将生成器注入到ef core框架中
+		/// </summary>
+		/// <typeparam name="T">PropertyBuilder'long'</typeparam>
+		/// <param name="propertyBuilder">ef属性构造器</param>
 		public static T RegisterEfCoreValueGenerator<T>(T propertyBuilder) where T : class
 		{
 			if (EfCoreValueGeneratorMethod == null)
 			{
-				var efAssembly = propertyBuilder.GetType().Assembly;
+				var efAssembly = typeof(T).GetType().Assembly;
 				var type = AsciiInterface.ModuleBuilder.DefineType(nameof(LongValueGenerator), TypeAttributes.Sealed, efAssembly.GetType("Microsoft.EntityFrameworkCore.ValueGeneration.ValueGenerator"));
 				var method = type.DefineMethod("NextValue",
 					MethodAttributes.Family | MethodAttributes.Virtual | MethodAttributes.HideBySig,
@@ -47,7 +52,7 @@ namespace Sunny.NetCore.Extension.Generator
 
 				property.SetGetMethod(method);
 				var gType = type.CreateType();
-				EfCoreValueGeneratorMethod = propertyBuilder.GetType().GetMethod("HasValueGenerator", Type.EmptyTypes).MakeGenericMethod(gType);
+				EfCoreValueGeneratorMethod = typeof(T).GetMethod("HasValueGenerator", Type.EmptyTypes).MakeGenericMethod(gType);
 			}
 			return (T)EfCoreValueGeneratorMethod.Invoke(propertyBuilder, null);
 		}
