@@ -26,35 +26,45 @@ namespace Sunny.NetCore.Extension.Generator
 		{
 			if (EfCoreValueGeneratorMethod == null)
 			{
-				var efAssembly = typeof(T).GetType().Assembly;
-				var type = AsciiInterface.ModuleBuilder.DefineType(nameof(LongValueGenerator), TypeAttributes.Sealed, efAssembly.GetType("Microsoft.EntityFrameworkCore.ValueGeneration.ValueGenerator"));
-				var method = type.DefineMethod("NextValue",
-					MethodAttributes.Family | MethodAttributes.Virtual | MethodAttributes.HideBySig,
-					CallingConventions.Standard | CallingConventions.HasThis,
-					typeof(object),
-					new Type[] { efAssembly.GetType("Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry") });
-				method.SetCustomAttribute(new CustomAttributeBuilder(typeof(MethodImplAttribute).GetConstructor(new Type[] { typeof(MethodImplOptions) }), new object[] { MethodImplOptions.AggressiveInlining }));
-				var il = method.GetILGenerator();
-				il.EmitCall(OpCodes.Call, typeof(LongValueGenerator).GetMethod(nameof(NextValue)), null);
-				il.Emit(OpCodes.Box, typeof(long));
-				il.Emit(OpCodes.Ret);
-
-				var property = type.DefineProperty("GeneratesTemporaryValues", PropertyAttributes.None, typeof(bool), null);
-
-				method = type.DefineMethod("get_GeneratesTemporaryValues",
-					MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.SpecialName | MethodAttributes.HideBySig,
-					CallingConventions.Standard | CallingConventions.HasThis,
-					typeof(bool),
-					Type.EmptyTypes);
-				il = method.GetILGenerator();
-				il.Emit(OpCodes.Ldc_I4_0);
-				il.Emit(OpCodes.Ret);
-
-				property.SetGetMethod(method);
-				var gType = type.CreateType();
-				EfCoreValueGeneratorMethod = typeof(T).GetMethod("HasValueGenerator", Type.EmptyTypes).MakeGenericMethod(gType);
+				lock (lc)
+				{
+					if (EfCoreValueGeneratorMethod == null)
+					{
+						INITEfCoreValueGenerator<T>();
+					}
+				}
 			}
 			return (T)EfCoreValueGeneratorMethod.Invoke(propertyBuilder, null);
+		}
+		private static void INITEfCoreValueGenerator<T>()
+		{
+			var efAssembly = typeof(T).Assembly;
+			var type = AsciiInterface.ModuleBuilder.DefineType(nameof(LongValueGenerator), TypeAttributes.Sealed, efAssembly.GetType("Microsoft.EntityFrameworkCore.ValueGeneration.ValueGenerator"));
+			var method = type.DefineMethod("NextValue",
+				MethodAttributes.Family | MethodAttributes.Virtual | MethodAttributes.HideBySig,
+				CallingConventions.Standard | CallingConventions.HasThis,
+				typeof(object),
+				new Type[] { efAssembly.GetType("Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry") });
+			method.SetCustomAttribute(new CustomAttributeBuilder(typeof(MethodImplAttribute).GetConstructor(new Type[] { typeof(MethodImplOptions) }), new object[] { MethodImplOptions.AggressiveInlining }));
+			var il = method.GetILGenerator();
+			il.EmitCall(OpCodes.Call, typeof(LongValueGenerator).GetMethod(nameof(NextValue)), null);
+			il.Emit(OpCodes.Box, typeof(long));
+			il.Emit(OpCodes.Ret);
+
+			var property = type.DefineProperty("GeneratesTemporaryValues", PropertyAttributes.None, typeof(bool), null);
+
+			method = type.DefineMethod("get_GeneratesTemporaryValues",
+				MethodAttributes.Public | MethodAttributes.Virtual | MethodAttributes.SpecialName | MethodAttributes.HideBySig,
+				CallingConventions.Standard | CallingConventions.HasThis,
+				typeof(bool),
+				Type.EmptyTypes);
+			il = method.GetILGenerator();
+			il.Emit(OpCodes.Ldc_I4_0);
+			il.Emit(OpCodes.Ret);
+
+			property.SetGetMethod(method);
+			var gType = type.CreateType();
+			EfCoreValueGeneratorMethod = typeof(T).GetMethod("HasValueGenerator", Type.EmptyTypes).MakeGenericMethod(gType);
 		}
 		//public override bool GeneratesTemporaryValues => false;
 
@@ -98,6 +108,7 @@ namespace Sunny.NetCore.Extension.Generator
 			f[0] = f[1] = f[2] = 0;
 			return id;
 		}
+		private static object lc = new object();
 		private static MethodInfo EfCoreValueGeneratorMethod;
 	}
 }
