@@ -19,10 +19,11 @@ namespace Sunny.NetCore.Extension.Converter
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public override unsafe long Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
 		{
+			if (reader.TokenType == JsonTokenType.Number) return reader.GetInt64();
 			var str = reader.ValueSpan;
 			if (str.Length != 16) throw new InvalidCastException();
-			if (!TryParseLong(in Unsafe.As<byte, Vector128<short>>(ref Unsafe.AsRef(in str.GetPinnableReference())), out var v)) throw new InvalidCastException();
-			return v;
+			if (TryParseLong(in Unsafe.As<byte, Vector128<short>>(ref Unsafe.AsRef(in str.GetPinnableReference())), out var v)) return v;
+			throw new InvalidCastException();
 		}
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public override unsafe void Write(Utf8JsonWriter writer, long value, JsonSerializerOptions options)

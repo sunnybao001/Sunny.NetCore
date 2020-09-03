@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -17,9 +18,12 @@ namespace Sunny.NetCore.Extension.Converter
 		public override unsafe Guid Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
 		{
 			var str = reader.ValueSpan;
-			if (str.Length != 32) throw new InvalidCastException();
-			if (!TryParseGuid(in Unsafe.As<byte, Vector256<short>>(ref Unsafe.AsRef(in str.GetPinnableReference())), out var v)) throw new InvalidCastException();
-			return v;
+			if (str.Length == 32)
+			{
+				if (TryParseGuid(in Unsafe.As<byte, Vector256<short>>(ref Unsafe.AsRef(in str.GetPinnableReference())), out var v)) return v;
+			}
+			else return reader.GetGuid();
+			throw new InvalidCastException();
 		}
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public unsafe override void Write(Utf8JsonWriter writer, Guid value, JsonSerializerOptions options)
