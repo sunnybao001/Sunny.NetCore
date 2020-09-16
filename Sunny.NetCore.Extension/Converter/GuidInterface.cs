@@ -14,7 +14,7 @@ namespace Sunny.NetCore.Extension.Converter
 	{
 		public static readonly GuidInterface Singleton = new GuidInterface();
 		private GuidInterface() { }
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public override unsafe Guid Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
 		{
 			var str = reader.ValueSpan;
@@ -25,13 +25,13 @@ namespace Sunny.NetCore.Extension.Converter
 			else return reader.GetGuid();
 			throw new InvalidCastException();
 		}
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public unsafe override void Write(Utf8JsonWriter writer, Guid value, JsonSerializerOptions options)
 		{
 			var vector = GuidToUtf8_32(in Unsafe.As<Guid, Vector128<byte>>(ref value));
 			writer.WriteStringValue(new ReadOnlySpan<byte>(&vector, 32));
 		}
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public unsafe string GuidToString(ref Guid value)
 		{
 			var vector = GuidToUtf8_32(in Unsafe.As<Guid, Vector128<byte>>(ref value)).AsByte();
@@ -39,29 +39,28 @@ namespace Sunny.NetCore.Extension.Converter
 			AsciiInterface.AsciiToUnicode(vector, f);
 			return new string((char*)f, 0, 32);
 		}
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public unsafe bool TryParse(string str, out Guid value)
 		{
 			var vector = AsciiInterface.Singleton.UnicodeToAscii_32(ref Unsafe.As<char, Vector256<short>>(ref Unsafe.AsRef(in str.GetPinnableReference()))).AsInt16();
 			return TryParseGuid(in vector, out value);
 		}
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		private unsafe Vector256<short> GuidToUtf8_32(in Vector128<byte> input)
 		{
 			var vector = Avx2.ConvertToVector256Int16(input);
 			vector = Avx2.Add(Avx2.Or(Avx2.ShiftRightLogical(vector, 4), Avx2.ShiftLeftLogical(Avx2.And(vector, LowMask), 8)), ShortCharA);
 			return vector;
 		}
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		private unsafe bool TryParseGuid(in Vector256<short> input, out Guid value)
 		{
-			value = default;
-			var vector = Avx2.Subtract(input, ShortCharA);	//很尴尬，JIT生成后的汇编会不断调用vmovupd将寄存器中的数据存入栈，再读取出来。
-			if (!Avx.TestZ(vector, ShortN15)) return false;
+			var vector = Avx2.Subtract(input, ShortCharA);
+			var r = Avx.TestZ(vector, ShortN15);
 			vector = Avx2.And(Avx2.Or(Avx2.ShiftLeftLogical(vector, 4), Avx2.ShiftRightLogical(vector, 8)), FFMask);
-			var vectorf = (Vector128<short>*)&vector;
-			Unsafe.As<Guid, Vector128<byte>>(ref value) = Sse2.PackUnsignedSaturate(vectorf[0], vectorf[1]);
-			return true;
+			var v = Sse2.PackUnsignedSaturate(Avx2.ExtractVector128(vector, 0), Avx2.ExtractVector128(vector, 1));
+			value = *(Guid*)&v;
+			return r;
 		}
 		//使用静态成员变量会造成CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE
 		internal Vector256<short> ShortCharA = Vector256.Create((sbyte)'A').AsInt16();

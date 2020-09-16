@@ -10,16 +10,17 @@ namespace Sunny.NetCore.Extension.TestC
 		{
 			Console.WriteLine("Hello World!");
 
-			TestLong();
+			//TestLong();
 			//TestGUID();
 			TestDateTime();
-			TestInt();
+			//TestInt();
+			Console.ReadLine();
 		}
 		public static void TestGUID()
 		{
 			var guid = Guid.NewGuid();
 			var str = GuidInterface.Singleton.GuidToString(ref guid);
-			GuidInterface.Singleton.TryParseGuid(str, out var ng);
+			GuidInterface.Singleton.TryParse(str, out var ng);
 			//Assert.AreEqual(guid, ng);
 			System.Text.Json.JsonSerializerOptions jsonOptions = new System.Text.Json.JsonSerializerOptions
 			{
@@ -38,11 +39,10 @@ namespace Sunny.NetCore.Extension.TestC
 			sw.Restart();
 			for (var i = 0; i < 1000000; ++i)
 			{
-				if (!GuidInterface.Singleton.TryParseGuid(GuidInterface.Singleton.GuidToString(ref guid), out guid)) throw new Exception();
+				if (!GuidInterface.Singleton.TryParse(GuidInterface.Singleton.GuidToString(ref guid), out guid)) throw new Exception();
 			}
 			sw.Stop();
 			Console.WriteLine("Sunny库转换耗时：" + sw.ElapsedMilliseconds.ToString());
-			Console.ReadLine();
 		}
 		public static void TestDateTime()
 		{
@@ -87,9 +87,25 @@ namespace Sunny.NetCore.Extension.TestC
 		public static void TestLong()
 		{
 			var l = Generator.LongValueGenerator.NextValue();
-			var str = LongInterface.Singleton.LongToString(l);
-			LongInterface.Singleton.TryParseLong(str, out var nl);
+			var @interface = LongInterface.Singleton;
+			var str = @interface.LongToString(l);
+			@interface.TryParse(str, out var nl);
 			//Assert.AreEqual(l, nl);
+
+			var sw = Stopwatch.StartNew();
+			for (var i = 0; i < 1000000; ++i)
+			{
+				l = long.Parse(l.ToString());
+			}
+			sw.Stop();
+			Console.WriteLine("long自带转换耗时：" + sw.ElapsedMilliseconds.ToString());
+			sw.Restart();
+			for (var i = 0; i < 1000000; ++i)
+			{
+				if (!@interface.TryParse(@interface.LongToString(l), out l)) throw new Exception();
+			}
+			sw.Stop();
+			Console.WriteLine("Sunny库转换耗时：" + sw.ElapsedMilliseconds.ToString());
 		}
 	}
 }

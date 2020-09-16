@@ -17,7 +17,7 @@ namespace Sunny.NetCore.Extension.Test
 		{
 			var guid = Guid.NewGuid();
 			var str = GuidInterface.Singleton.GuidToString(ref guid);
-			Assert.IsTrue(GuidInterface.Singleton.TryParseGuid(str, out var ng));
+			Assert.IsTrue(GuidInterface.Singleton.TryParse(str, out var ng));
 			Assert.AreEqual(guid, ng);
 			str = System.Text.Json.JsonSerializer.Serialize(guid, jsonOptions);
 			ng = System.Text.Json.JsonSerializer.Deserialize<Guid>(str, jsonOptions);
@@ -28,7 +28,7 @@ namespace Sunny.NetCore.Extension.Test
 		{
 			var l = LongValueGenerator.NextValue();
 			var str = LongInterface.Singleton.LongToString(l);
-			Assert.IsTrue(LongInterface.Singleton.TryParseLong(str, out var nl));
+			Assert.IsTrue(LongInterface.Singleton.TryParse(str, out var nl));
 			Assert.AreEqual(l, nl);
 		}
 		[TestMethod]
