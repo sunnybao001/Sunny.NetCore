@@ -22,14 +22,14 @@ namespace Sunny.NetCore.Extension.Converter
 			SbyteMax1 = Avx2.ExtractVector128(SbyteMax, 0);
 			ShortN151 = Avx2.ExtractVector128(ShortN15, 0);
 		}
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 		public override unsafe DateTime Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
 		{
 			var s = reader.ValueSpan;
 			if (TryParseDateTime(s, out var value)) return value;
 			throw new ArgumentException("DateTime的格式不正确");
 		}
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 		public override unsafe void Write(Utf8JsonWriter writer, DateTime value, JsonSerializerOptions options)
 		{
 			if (value.TimeOfDay.Ticks == default)
@@ -43,7 +43,7 @@ namespace Sunny.NetCore.Extension.Converter
 				writer.WriteStringValue(new ReadOnlySpan<byte>(&r, 19));
 			}
 		}
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 		public unsafe string DateTimeToString(DateTime value)
 		{
 			if (value.TimeOfDay.Ticks == default)
@@ -59,13 +59,13 @@ namespace Sunny.NetCore.Extension.Converter
 				return new string((char*)f, 0, 19);
 			}
 		}
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 		public unsafe bool TryParseDateTime(string str, out DateTime value)
 		{
 			var vector = AsciiInterface.Singleton.UnicodeToAscii_32(ref Unsafe.As<char, Vector256<short>>(ref Unsafe.AsRef(in str.GetPinnableReference())));
 			return TryParseDateTime(new ReadOnlySpan<byte>(&vector, str.Length), out value);
 		}
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 		private unsafe bool TryParseDateTime(ReadOnlySpan<byte> input, out DateTime value)
 		{
 			bool success = true;

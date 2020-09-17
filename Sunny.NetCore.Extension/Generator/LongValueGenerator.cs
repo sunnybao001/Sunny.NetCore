@@ -45,7 +45,7 @@ namespace Sunny.NetCore.Extension.Generator
 				CallingConventions.Standard | CallingConventions.HasThis,
 				typeof(object),
 				new Type[] { efAssembly.GetType("Microsoft.EntityFrameworkCore.ChangeTracking.EntityEntry") });
-			method.SetCustomAttribute(new CustomAttributeBuilder(typeof(MethodImplAttribute).GetConstructor(new Type[] { typeof(MethodImplOptions) }), new object[] { MethodImplOptions.AggressiveInlining }));
+			method.SetCustomAttribute(new CustomAttributeBuilder(typeof(MethodImplAttribute).GetConstructor(new Type[] { typeof(MethodImplOptions) }), new object[] { MethodImplOptions.AggressiveOptimization }));
 			var il = method.GetILGenerator();
 			il.EmitCall(OpCodes.Call, typeof(LongValueGenerator).GetMethod(nameof(NextValue)), null);
 			il.Emit(OpCodes.Box, typeof(long));

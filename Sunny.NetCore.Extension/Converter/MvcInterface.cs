@@ -34,7 +34,7 @@ namespace Sunny.NetCore.Extension.Converter
 				CallingConventions.Standard | CallingConventions.HasThis,
 				contextReturn,
 				new Type[] { contextParam });
-			method.SetCustomAttribute(new CustomAttributeBuilder(typeof(MethodImplAttribute).GetConstructor(new Type[] { typeof(MethodImplOptions) }), new object[] { MethodImplOptions.AggressiveInlining }));
+			method.SetCustomAttribute(new CustomAttributeBuilder(typeof(MethodImplAttribute).GetConstructor(new Type[] { typeof(MethodImplOptions) }), new object[] { MethodImplOptions.AggressiveOptimization }));
 			var il = method.GetILGenerator();
 			var loc0 = il.DeclareLocal(typeof(Guid));
 			il.Emit(OpCodes.Ldarg_1);
@@ -85,7 +85,7 @@ namespace Sunny.NetCore.Extension.Converter
 				CallingConventions.Standard | CallingConventions.HasThis,
 				typeof(Task),
 				new Type[] { bindingParam });
-			method.SetCustomAttribute(new CustomAttributeBuilder(typeof(MethodImplAttribute).GetConstructor(new Type[] { typeof(MethodImplOptions) }), new object[] { MethodImplOptions.AggressiveInlining }));
+			method.SetCustomAttribute(new CustomAttributeBuilder(typeof(MethodImplAttribute).GetConstructor(new Type[] { typeof(MethodImplOptions) }), new object[] { MethodImplOptions.AggressiveOptimization }));
 			var il = method.GetILGenerator();
 			var loc0 = il.DeclareLocal(typeof(string));
 			var loc1 = il.DeclareLocal(typeof(TR));

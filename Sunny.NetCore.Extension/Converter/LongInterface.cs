@@ -16,7 +16,7 @@ namespace Sunny.NetCore.Extension.Converter
 	{
 		public static readonly LongInterface Singleton;
 		internal LongInterface() { }
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 		public override unsafe long Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
 		{
 			if (reader.TokenType == JsonTokenType.Number) return reader.GetInt64();
@@ -25,47 +25,47 @@ namespace Sunny.NetCore.Extension.Converter
 			if (TryParseLong(in Unsafe.As<byte, Vector128<short>>(ref Unsafe.AsRef(in str.GetPinnableReference())), out var v)) return v;
 			throw new InvalidCastException();
 		}
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 		public override unsafe void Write(Utf8JsonWriter writer, long value, JsonSerializerOptions options)
 		{
 			var vector = LongToUtf8_16(value);
 			writer.WriteStringValue(new ReadOnlySpan<byte>(&vector, 16));
 		}
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 		public unsafe bool TryParse(string str, out long value)
 		{
 			var vector = AsciiInterface.Singleton.UnicodeToAscii_16(in Unsafe.As<char, Vector256<short>>(ref Unsafe.AsRef(in str.GetPinnableReference()))).AsInt16();
 			return TryParseLong(in vector, out value);
 		}
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 		public unsafe string LongToString(long value)
 		{
 			var vector = Avx2.ConvertToVector256Int16(LongToUtf8_16(value));
 			return new string((char*)&vector, 0, 16);
 		}
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 		private unsafe Vector128<byte> LongToUtf8_16(long value)
 		{
-			return Sse41.X64.IsSupported ? LongToUtf8_16X64(value) : LongToUtf8_16X86(value);
+			return Sse41.X64.IsSupported ? LongToUtf8_16X64(value) : LongToUtf8_16X86(value);	//会在JIT时进行静态判断
 		}
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 		private Vector128<byte> LongToUtf8_16X64(long value)
 		{
 			var vector = Ssse3.Shuffle(Sse41.X64.Insert(default, value, 0).AsSByte(), ShuffleMask).AsInt16();
 			return Sse2.Add(Sse2.Or(Sse2.ShiftRightLogical(vector, 4), Sse2.ShiftLeftLogical(Sse2.And(vector, LowMask), 8)), ShortCharA).AsByte();
 		}
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 		private unsafe Vector128<byte> LongToUtf8_16X86(long value)
 		{
 			var vector = Ssse3.Shuffle(*(Vector128<sbyte>*)&value, ShuffleMask).AsInt16();
 			return Sse2.Add(Sse2.Or(Sse2.ShiftRightLogical(vector, 4), Sse2.ShiftLeftLogical(Sse2.And(vector, LowMask), 8)), ShortCharA).AsByte();
 		}
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 		private bool TryParseLong(in Vector128<short> input, out long value)
 		{
 			return Sse41.X64.IsSupported ? TryParseLongX64(in input, out value) : TryParseLongX86(in input, out value);	//会在JIT时进行静态判断
 		}
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 		private bool TryParseLongX64(in Vector128<short> input, out long value)
 		{
 			var vector = Sse2.Subtract(input, ShortCharA);
@@ -73,7 +73,7 @@ namespace Sunny.NetCore.Extension.Converter
 			value = Sse41.X64.Extract(Ssse3.Shuffle(Sse2.Or(Sse2.ShiftLeftLogical(vector, 4), Sse2.ShiftRightLogical(vector, 8)).AsSByte(), NShuffleMask).AsInt64(), 0);
 			return r;
 		}
-		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 		private unsafe bool TryParseLongX86(in Vector128<short> input, out long value)
 		{
 			var vector = Sse2.Subtract(input, ShortCharA);

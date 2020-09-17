@@ -10,9 +10,9 @@ namespace Sunny.NetCore.Extension.TestC
 		{
 			Console.WriteLine("Hello World!");
 
-			TestLong();
+			//TestLong();
 			//TestGUID();
-			//TestDateTime();
+			TestDateTime();
 			//TestInt();
 			Console.ReadLine();
 		}
