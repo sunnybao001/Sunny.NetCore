@@ -46,6 +46,17 @@ namespace Sunny.NetCore.Extension.Converter
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		private unsafe Vector128<byte> LongToUtf8_16(long value)
 		{
+			return Sse41.X64.IsSupported ? LongToUtf8_16X64(value) : LongToUtf8_16X86(value);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		private Vector128<byte> LongToUtf8_16X64(long value)
+		{
+			var vector = Ssse3.Shuffle(Sse41.X64.Insert(default, value, 0).AsSByte(), ShuffleMask).AsInt16();
+			return Sse2.Add(Sse2.Or(Sse2.ShiftRightLogical(vector, 4), Sse2.ShiftLeftLogical(Sse2.And(vector, LowMask), 8)), ShortCharA).AsByte();
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		private unsafe Vector128<byte> LongToUtf8_16X86(long value)
+		{
 			var vector = Ssse3.Shuffle(*(Vector128<sbyte>*)&value, ShuffleMask).AsInt16();
 			return Sse2.Add(Sse2.Or(Sse2.ShiftRightLogical(vector, 4), Sse2.ShiftLeftLogical(Sse2.And(vector, LowMask), 8)), ShortCharA).AsByte();
 		}
