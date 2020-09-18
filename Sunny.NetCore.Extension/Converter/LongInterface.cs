@@ -78,8 +78,10 @@ namespace Sunny.NetCore.Extension.Converter
 		{
 			var vector = Sse2.Subtract(input, ShortCharA);
 			var r = Sse41.TestZ(vector, ShortN15);
-			vector = Ssse3.Shuffle(Sse2.Or(Sse2.ShiftLeftLogical(vector, 4), Sse2.ShiftRightLogical(vector, 8)).AsSByte(), NShuffleMask).AsInt16();
-			value = *(long*)&vector;
+			var v = Ssse3.Shuffle(Sse2.Or(Sse2.ShiftLeftLogical(vector, 4), Sse2.ShiftRightLogical(vector, 8)).AsSByte(), NShuffleMask).AsInt16().AsInt32();
+#pragma warning disable CS0675 // 对进行了带符号扩展的操作数使用了按位或运算符
+			value = Sse41.Extract(v, 0) | ((long)Sse41.Extract(v, 1) << 32);
+#pragma warning restore CS0675 // 对进行了带符号扩展的操作数使用了按位或运算符
 			return r;
 		}
 		static LongInterface()

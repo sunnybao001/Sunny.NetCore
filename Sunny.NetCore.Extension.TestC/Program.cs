@@ -19,12 +19,13 @@ namespace Sunny.NetCore.Extension.TestC
 		public static void TestGUID()
 		{
 			var guid = Guid.NewGuid();
-			var str = GuidInterface.Singleton.GuidToString(ref guid);
-			GuidInterface.Singleton.TryParse(str, out var ng);
+			var @interface = GuidInterface.Singleton;
+			var str = @interface.GuidToString(ref guid);
+			@interface.TryParse(str, out var ng);
 			//Assert.AreEqual(guid, ng);
 			System.Text.Json.JsonSerializerOptions jsonOptions = new System.Text.Json.JsonSerializerOptions
 			{
-				Converters = { GuidInterface.Singleton }
+				Converters = { @interface }
 			};
 			str = System.Text.Json.JsonSerializer.Serialize(guid, jsonOptions);
 			ng = System.Text.Json.JsonSerializer.Deserialize<Guid>(str, jsonOptions);
@@ -39,7 +40,7 @@ namespace Sunny.NetCore.Extension.TestC
 			sw.Restart();
 			for (var i = 0; i < 1000000; ++i)
 			{
-				if (!GuidInterface.Singleton.TryParse(GuidInterface.Singleton.GuidToString(ref guid), out guid)) throw new Exception();
+				if (!@interface.TryParse(@interface.GuidToString(ref guid), out guid)) throw new Exception();
 			}
 			sw.Stop();
 			Console.WriteLine("Sunny库转换耗时：" + sw.ElapsedMilliseconds.ToString());

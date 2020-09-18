@@ -15,68 +15,48 @@ namespace Sunny.NetCore.Extension.Converter
 		private unsafe Vector128<byte> DateToUtf8_10(DateTime value)
 		{
 			var yyyy = value.Year;
-			Vector128<int> numbers;   //最多4个值
-			var nf = (int*)&numbers;
-			nf[0] = yyyy / 100;
-			nf[1] = yyyy - nf[0] * 100;
-			nf[2] = value.Month;
-			nf[3] = value.Day;
-			Vector128<sbyte> vector;
-			*(long*)&vector = NumberToUtf8Bit2(in numbers);
-			*((byte*)&vector + 8) = (byte)'-';
-			return Ssse3.Shuffle(vector, TUShuffleMask1).AsByte();
+			var yt = yyyy / 100;
+			var MM = value.Month;
+			var dd = value.Day;
+			var numbers = Sse41.Insert(Sse41.Insert(Sse41.Insert(Sse41.Insert(default, yt, 0), yyyy - yt * 100, 1), MM, 2), dd, 3); //寄存器优化
+			var v = Ssse3.Shuffle(Sse41.Insert(NumberToUtf8Bit2(numbers), (sbyte)'-', 8), TUShuffleMask1).AsByte();
+			return v;
 		}
 		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 		private unsafe Vector256<byte> DateTimeToUtf8_19(DateTime value)
 		{
 			var yyyy = value.Year;
-			Vector256<int> numbers;   //最多8个值
-			var nf = (int*)&numbers;
-			nf[0] = yyyy / 100;
-			nf[1] = yyyy - nf[0] * 100;
-			nf[2] = value.Month;
-			nf[3] = value.Day;
-			nf[4] = value.Hour;
-			nf[5] = value.Minute;
-			nf[6] = value.Second;
-			Vector256<sbyte> vector;
-			*(Vector128<byte>*)&vector = NumberToUtf8Bit2(in numbers);
-			*(short*)((byte*)&vector + 16) = *(short*)((byte*)&vector + 12);
-			*((byte*)&vector + 12) = (byte)'-';
-			*((byte*)&vector + 13) = (byte)' ';
-			*((byte*)&vector + 14) = (byte)':';
-			*((byte*)&vector + 18) = (byte)':';
-			return Avx2.Shuffle(vector, TUShuffleMask).AsByte();
+			var yt = yyyy / 100;
+			var MM = value.Month;
+			var dd = value.Day;
+			var hh = value.Hour;
+			var mm = value.Minute;
+			var ss = value.Second;
+			Vector256<int> numbers = Avx2.InsertVector128(Avx2.InsertVector128(default,
+				Sse41.Insert(Sse41.Insert(Sse41.Insert(Sse41.Insert(default, yt, 0), yyyy - yt * 100, 1), MM, 2), dd, 3), 0),
+				Sse41.Insert(Sse41.Insert(Sse41.Insert(default, hh, 0), mm, 1), ss, 2), 1);
+			var v128 = NumberToUtf8Bit2(numbers);
+			Vector256<sbyte> vector = Avx2.InsertVector128(Avx2.InsertVector128(default,
+				Sse41.Insert(Sse41.Insert(Sse41.Insert(v128, (sbyte)'-', 12), (sbyte)' ', 13), (sbyte)':', 14), 0),
+				Sse41.Insert(Sse2.Insert(v128.AsUInt16(), Sse2.Extract(v128.AsUInt16(), 6), 0).AsSByte(), (sbyte)':', 2), 1);
+			var v = Avx2.Shuffle(vector, TUShuffleMask).AsByte();
+			return v;
 		}
 		//最多输入4个数字，输出8个结果，每个数字最大值不能超过255。
-		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
-		private long NumberToUtf8Bit2(in Vector128<int> numbers)
-		{
-			return Sse41.X64.IsSupported ? NumberToUtf8Bit2X64(in numbers) : NumberToUtf8Bit2X86(in numbers);   //会在JIT时进行静态判断
-		}
-		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
-		private long NumberToUtf8Bit2X64(in Vector128<int> numbers)
+		[MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
+		private Vector128<sbyte> NumberToUtf8Bit2(Vector128<int> numbers)
 		{
 			var vector = Sse2.And(Sse2.ShiftRightLogical(Sse2.MultiplyLow(Sse2.And(Sse2.Or(Sse2.ShiftLeftLogical(numbers, 16), numbers).AsInt16(), this.SbyteMax1), this.ShortBit2X10Vector1), 7), this.SbyteMax1);
 			vector = Sse2.Add(Sse2.Subtract(vector, Sse2.MultiplyLow(Sse2.And(Sse2.ShiftRightLogical(Sse2.MultiplyLow(vector, ShortD1), 7), this.SbyteMax1), this.Short101)), this.ShortChar01);
-			return Sse41.X64.Extract(Sse2.PackUnsignedSaturate(vector, vector).AsInt64(), 0);
-		}
-		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
-		private unsafe long NumberToUtf8Bit2X86(in Vector128<int> numbers)
-		{
-			var vector = Sse2.And(Sse2.ShiftRightLogical(Sse2.MultiplyLow(Sse2.And(Sse2.Or(Sse2.ShiftLeftLogical(numbers, 16), numbers).AsInt16(), this.SbyteMax1), this.ShortBit2X10Vector1), 7), this.SbyteMax1);
-			vector = Sse2.Add(Sse2.Subtract(vector, Sse2.MultiplyLow(Sse2.And(Sse2.ShiftRightLogical(Sse2.MultiplyLow(vector, ShortD1), 7), this.SbyteMax1), this.Short101)), this.ShortChar01);
-			vector = Sse2.PackUnsignedSaturate(vector, vector).AsInt16();
-			return *(long*)&vector;
+			return Sse2.PackSignedSaturate(vector, vector);
 		}
 		//最多输入8个数字，输出16个结果，每个数字最大值不能超过255。
-		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
-		private unsafe Vector128<byte> NumberToUtf8Bit2(in Vector256<int> numbers)
+		[MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
+		private Vector128<sbyte> NumberToUtf8Bit2(Vector256<int> numbers)
 		{
 			var vector = Avx2.And(Avx2.ShiftRightLogical(Avx2.MultiplyLow(Avx2.And(Avx2.Or(numbers, Avx2.ShiftLeftLogical(numbers, 16)).AsInt16(), SbyteMax), ShortBit2X10Vector), 7), SbyteMax);
 			vector = Avx2.Add(Avx2.Subtract(vector, Avx2.MultiplyLow(Avx2.And(Avx2.ShiftRightLogical(Avx2.MultiplyLow(vector, ShortD), 7), SbyteMax), Short10)), ShortChar0);
-			var vectorf = (Vector128<short>*)&vector;
-			return Sse2.PackUnsignedSaturate(vectorf[0], vectorf[1]);
+			return Sse2.PackSignedSaturate(Avx2.ExtractVector128(vector, 0), Avx2.ExtractVector128(vector, 1));
 		}
 		private Vector256<short> Short10 = Vector256.Create((short)10);
 		internal readonly Vector128<short> Short101;

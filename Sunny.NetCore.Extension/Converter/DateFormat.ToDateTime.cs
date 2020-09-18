@@ -14,63 +14,36 @@ namespace Sunny.NetCore.Extension.Converter
 		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 		private unsafe bool Utf8_10ToDate(in Vector128<sbyte> input, out DateTime value)
 		{
-			var vector = Ssse3.Shuffle(input, TDShuffleMask1);
-			if (!Utf8Bit2ToNumber(in vector, out var v))
+			var vector = Sse2.Subtract(Sse41.ConvertToVector128Int16(Ssse3.Shuffle(input, TDShuffleMask1)), this.ShortChar01);
+			if (!Sse41.TestZ(vector, this.ShortN151))
 			{
 				value = default;
 				return false;
 			}
-			var vf = (short*)&v;
-			value = new DateTime(vf[0] * 100 + vf[1], vf[2], vf[3]);
+			vector = Sse2.MultiplyLow(vector, this.Int101);
+			var v = Ssse3.HorizontalAdd(vector, vector).AsByte();
+			value = new DateTime(Sse41.Extract(v, 0) * 100 + Sse41.Extract(v, 2), Sse41.Extract(v, 4), Sse41.Extract(v, 6));    //寄存器优化
 			return true;
 		}
 		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 		private unsafe bool Utf8_19ToDate(in Vector256<sbyte> input, out DateTime value)
 		{
-			var vector = Avx2.ExtractVector128(Avx2.PermuteVar8x32(Avx2.Shuffle(input, TDShuffleMask).AsInt32(), Permute), 0).AsSByte();
-			if (!Utf8Bit2ToNumber(ref vector, out var v))
+			var vector = Avx2.Subtract(Avx2.ConvertToVector256Int16(Avx2.ExtractVector128(Avx2.PermuteVar8x32(Avx2.Shuffle(input, TDShuffleMask).AsInt32(), Permute), 0).AsSByte()), ShortChar0);
+			if (!Avx.TestZ(vector, ShortN15))
 			{
 				value = default;
 				return false;
 			}
-			var vf = (short*)&v;
-			value = new DateTime(vf[0] * 100 + vf[1], vf[2], vf[3], vf[4], vf[5], vf[6]);
+			var v0 = Avx2.MultiplyLow(vector, Int10).AsInt64();
+			var v = Ssse3.HorizontalAdd(Avx2.ExtractVector128(v0, 0).AsInt16(), Avx2.ExtractVector128(v0, 1).AsInt16()).AsByte();    //双数位置的乘数为0，所以不用担心short溢出
+			value = new DateTime(Sse41.Extract(v, 0) * 100 + Sse41.Extract(v, 2),
+				Sse41.Extract(v, 4),
+				Sse41.Extract(v, 6),
+				Sse41.Extract(v, 8),
+				Sse41.Extract(v, 10),
+				Sse41.Extract(v, 12)
+				);    //寄存器优化
 			return true;
-		}
-		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
-		private bool Utf8Bit2ToNumber(in Vector128<sbyte> input64, out long value)
-		{
-			return Sse41.X64.IsSupported ? Utf8Bit2ToNumberX64(in input64, out value) : Utf8Bit2ToNumberX86(in input64, out value);   //会在JIT时进行静态判断
-		}
-		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
-		private unsafe bool Utf8Bit2ToNumberX64(in Vector128<sbyte> input64, out long value)
-		{
-			var vector = Sse2.Subtract(Sse41.ConvertToVector128Int16(input64), this.ShortChar01);
-			var r = Sse41.TestZ(vector, this.ShortN151);
-			vector = Sse2.MultiplyLow(vector, this.Int101);
-			value = Sse41.X64.Extract(Ssse3.HorizontalAdd(vector, vector).AsInt64(), 0);
-			return r;
-		}
-		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
-		private unsafe bool Utf8Bit2ToNumberX86(in Vector128<sbyte> input64, out long value)
-		{
-			var vector = Sse2.Subtract(Sse41.ConvertToVector128Int16(input64), this.ShortChar01);
-			var r = Sse41.TestZ(vector, this.ShortN151);
-			vector = Sse2.MultiplyLow(vector, this.Int101);
-			var v = Ssse3.HorizontalAdd(vector, vector).AsInt32();
-#pragma warning disable CS0675 // 对进行了带符号扩展的操作数使用了按位或运算符
-			value = Sse41.Extract(v, 0) | ((long)Sse41.Extract(v, 1) << 32);
-#pragma warning restore CS0675 // 对进行了带符号扩展的操作数使用了按位或运算符
-			return r;
-		}
-		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
-		private unsafe bool Utf8Bit2ToNumber(ref Vector128<sbyte> input, out Vector128<short> value)
-		{
-			var vector = Avx2.Subtract(Avx2.ConvertToVector256Int16(input), ShortChar0);
-			var r = Avx.TestZ(vector, ShortN15);
-			var v = Avx2.MultiplyLow(vector, Int10).AsInt64();
-			value = Ssse3.HorizontalAdd(Avx2.ExtractVector128(v, 0).AsInt16(), Avx2.ExtractVector128(v, 1).AsInt16());    //双数位置的乘数为0，所以不用担心short溢出
-			return r;
 		}
 		private Vector256<short> Int10 = Vector256.Create(10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1);
 		internal readonly Vector128<short> Int101;
