@@ -35,18 +35,18 @@ namespace Sunny.NetCore.Extension.Converter
 		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 		public unsafe string GuidToString(ref Guid value)
 		{
+			var str = AsciiInterface.FastAllocateString(32);
 			var vector = GuidToUtf8_32(in Unsafe.As<Guid, Vector128<byte>>(ref value)).AsByte();
-			var f = stackalloc Vector256<short>[2];
-			AsciiInterface.AsciiToUnicode(vector, f);
-			return new string((char*)f, 0, 32);
+			AsciiInterface.AsciiToUnicode(vector, ref Unsafe.As<char, Vector256<short>>(ref Unsafe.AsRef(in str.GetPinnableReference())));
+			return str;
 		}
 		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 		public unsafe bool TryParse(string str, out Guid value)
 		{
-			var vector = AsciiInterface.Singleton.UnicodeToAscii_32(ref Unsafe.As<char, Vector256<short>>(ref Unsafe.AsRef(in str.GetPinnableReference()))).AsInt16();
+			var vector = AsciiInterface.UnicodeToAscii_32(ref Unsafe.As<char, Vector256<short>>(ref Unsafe.AsRef(in str.GetPinnableReference()))).AsInt16();
 			return TryParseGuid(in vector, out value);
 		}
-		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
 		private unsafe Vector256<short> GuidToUtf8_32(in Vector128<byte> input)
 		{
 			var vector = Avx2.ConvertToVector256Int16(input);
@@ -68,6 +68,6 @@ namespace Sunny.NetCore.Extension.Converter
 		internal Vector256<short> ShortN15 = Vector256.Create((sbyte)~15).AsInt16();
 		internal Vector256<short> LowMask = Vector256.Create((short)15);
 		internal Vector256<short> FFMask = Vector256.Create((short)0xFF);
-
+		private readonly AsciiInterface AsciiInterface = AsciiInterface.Singleton;
 	}
 }

@@ -48,21 +48,39 @@ namespace Sunny.NetCore.Extension.Converter
 		{
 			if (value.TimeOfDay.Ticks == default)
 			{
+				var str = AsciiInterface.FastAllocateString(10);
 				var vector = Avx2.ConvertToVector256Int16(DateToUtf8_10(value));
-				return new string((char*)&vector, 0, 10);
+				Unsafe.As<char, Vector128<short>>(ref Unsafe.AsRef(in str.GetPinnableReference())) = Avx2.ExtractVector128(vector, 0);
+				Unsafe.Add(ref Unsafe.As<char, int>(ref Unsafe.AsRef(in str.GetPinnableReference())), 4) = vector.AsInt32().GetElement(4);
+				return str;
 			}
 			else
 			{
+				var str = AsciiInterface.FastAllocateString(20);
 				var r = DateTimeToUtf8_19(value);
-				var f = stackalloc Vector256<short>[2];
-				AsciiInterface.AsciiToUnicode(r, f);
-				return new string((char*)f, 0, 19);
+				Unsafe.As<char, Vector256<short>>(ref Unsafe.AsRef(in str.GetPinnableReference())) = Avx2.ConvertToVector256Int16(Avx2.ExtractVector128(r, 0));
+				var vector = Avx2.ConvertToVector256Int16(Avx2.ExtractVector128(r, 1));
+				if (Sse41.X64.IsSupported)
+				{
+					Unsafe.Add(ref Unsafe.As<char, long>(ref Unsafe.AsRef(in str.GetPinnableReference())), 4) = vector.AsInt64().GetElement(0);
+				}
+				else
+				{
+					SetLong32(vector.AsInt32(), ref Unsafe.Add(ref Unsafe.As<char, int>(ref Unsafe.AsRef(in str.GetPinnableReference())), 8));
+				}
+				return str;
 			}
+		}
+		[MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
+		static void SetLong32(Vector256<int> vector, ref int output)
+		{
+			output = vector.GetElement(0);
+			Unsafe.Add(ref output, 1) = vector.GetElement(1);
 		}
 		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 		public unsafe bool TryParseDateTime(string str, out DateTime value)
 		{
-			var vector = AsciiInterface.Singleton.UnicodeToAscii_32(ref Unsafe.As<char, Vector256<short>>(ref Unsafe.AsRef(in str.GetPinnableReference())));
+			var vector = AsciiInterface.UnicodeToAscii_32(ref Unsafe.As<char, Vector256<short>>(ref Unsafe.AsRef(in str.GetPinnableReference())));
 			return TryParseDateTime(new ReadOnlySpan<byte>(&vector, str.Length), out value);
 		}
 		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
@@ -106,5 +124,6 @@ namespace Sunny.NetCore.Extension.Converter
 		internal readonly Vector128<short> ShortChar01;
 		internal readonly Vector128<short> ShortD1;
 		internal readonly Vector128<short> ShortBit2X10Vector1;
+		private readonly AsciiInterface AsciiInterface = AsciiInterface.Singleton;
 	}
 }

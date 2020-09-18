@@ -11,18 +11,18 @@ namespace Sunny.NetCore.Extension.Converter
 {
 	partial class DateFormat
 	{
-		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
 		private unsafe Vector128<byte> DateToUtf8_10(DateTime value)
 		{
 			var yyyy = value.Year;
 			var yt = yyyy / 100;
 			var MM = value.Month;
 			var dd = value.Day;
-			var numbers = Sse41.Insert(Sse41.Insert(Sse41.Insert(Sse41.Insert(default, yt, 0), yyyy - yt * 100, 1), MM, 2), dd, 3); //寄存器优化
-			var v = Ssse3.Shuffle(Sse41.Insert(NumberToUtf8Bit2(numbers), (sbyte)'-', 8), TUShuffleMask1).AsByte();
+			var numbers = Vector128.Create(yt, yyyy - yt * 100, MM, dd); //JIT内部优化
+			var v = Ssse3.Shuffle(Sse41.Insert(NumberToUtf8Bit2(numbers), (sbyte)'-', 8), TUShuffleMask1).AsByte();	//寄存器优化
 			return v;
 		}
-		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
 		private unsafe Vector256<byte> DateTimeToUtf8_19(DateTime value)
 		{
 			var yyyy = value.Year;
@@ -32,13 +32,11 @@ namespace Sunny.NetCore.Extension.Converter
 			var hh = value.Hour;
 			var mm = value.Minute;
 			var ss = value.Second;
-			Vector256<int> numbers = Avx2.InsertVector128(Avx2.InsertVector128(default,
-				Sse41.Insert(Sse41.Insert(Sse41.Insert(Sse41.Insert(default, yt, 0), yyyy - yt * 100, 1), MM, 2), dd, 3), 0),
-				Sse41.Insert(Sse41.Insert(Sse41.Insert(default, hh, 0), mm, 1), ss, 2), 1);
+			Vector256<int> numbers = Vector256.Create(yt, yyyy - yt * 100, MM, dd, hh, mm, ss, yt);	//JIT内部优化
 			var v128 = NumberToUtf8Bit2(numbers);
-			Vector256<sbyte> vector = Avx2.InsertVector128(Avx2.InsertVector128(default,
-				Sse41.Insert(Sse41.Insert(Sse41.Insert(v128, (sbyte)'-', 12), (sbyte)' ', 13), (sbyte)':', 14), 0),
-				Sse41.Insert(Sse2.Insert(v128.AsUInt16(), Sse2.Extract(v128.AsUInt16(), 6), 0).AsSByte(), (sbyte)':', 2), 1);
+			Vector256<sbyte> vector = Vector256.Create(
+				Sse41.Insert(Sse41.Insert(Sse41.Insert(v128, (sbyte)'-', 12), (sbyte)' ', 13), (sbyte)':', 14),
+				Sse41.Insert(Sse2.Insert(v128.AsUInt16(), Sse2.Extract(v128.AsUInt16(), 6), 0).AsSByte(), (sbyte)':', 2));
 			var v = Avx2.Shuffle(vector, TUShuffleMask).AsByte();
 			return v;
 		}

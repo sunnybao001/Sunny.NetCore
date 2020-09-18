@@ -7,6 +7,8 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
+using System.Runtime.Versioning;
+using System.Security;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -34,55 +36,55 @@ namespace Sunny.NetCore.Extension.Converter
 		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 		public unsafe bool TryParse(string str, out long value)
 		{
-			var vector = AsciiInterface.Singleton.UnicodeToAscii_16(in Unsafe.As<char, Vector256<short>>(ref Unsafe.AsRef(in str.GetPinnableReference()))).AsInt16();
-			return TryParseLong(in vector, out value);
+			var vector = AsciiInterface.UnicodeToAscii_16(in Unsafe.As<char, Vector256<short>>(ref Unsafe.AsRef(in str.GetPinnableReference()))).AsInt16();
+			var r = TryParseLong(in vector, out value);
+			return r;
 		}
 		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 		public unsafe string LongToString(long value)
 		{
+			var str = AsciiInterface.FastAllocateString(16);
 			var vector = Avx2.ConvertToVector256Int16(LongToUtf8_16(value));
-			return new string((char*)&vector, 0, 16);
+			Unsafe.As<char, Vector256<short>>(ref Unsafe.AsRef(in str.GetPinnableReference())) = vector;
+			return str;
 		}
-		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
 		private unsafe Vector128<byte> LongToUtf8_16(long value)
 		{
-			return Sse41.X64.IsSupported ? LongToUtf8_16X64(value) : LongToUtf8_16X86(value);	//会在JIT时进行静态判断
-		}
-		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
-		private Vector128<byte> LongToUtf8_16X64(long value)
-		{
-			var vector = Ssse3.Shuffle(Sse41.X64.Insert(default, value, 0).AsSByte(), ShuffleMask).AsInt16();
+			var vector = Sse41.X64.IsSupported ? LongToUtf8_16X64(value) : LongToUtf8_16X86((int)value, (int)(value >> 32));	//会在JIT时进行静态判断
 			return Sse2.Add(Sse2.Or(Sse2.ShiftRightLogical(vector, 4), Sse2.ShiftLeftLogical(Sse2.And(vector, LowMask), 8)), ShortCharA).AsByte();
 		}
-		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
-		private unsafe Vector128<byte> LongToUtf8_16X86(long value)
+		[MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
+		private Vector128<short> LongToUtf8_16X64(long value)
 		{
-			var vector = Ssse3.Shuffle(*(Vector128<sbyte>*)&value, ShuffleMask).AsInt16();
-			return Sse2.Add(Sse2.Or(Sse2.ShiftRightLogical(vector, 4), Sse2.ShiftLeftLogical(Sse2.And(vector, LowMask), 8)), ShortCharA).AsByte();
+			return Ssse3.Shuffle(Vector128.Create(value, value).AsSByte(), ShuffleMask).AsInt16();
 		}
-		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
+		private Vector128<short> LongToUtf8_16X86(int value0, int value1)
+		{
+			return Ssse3.Shuffle(Vector128.Create(value0, value1, value0, value0).AsSByte(), ShuffleMask).AsInt16();	//寄存器优化
+		}
+		[MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
 		private bool TryParseLong(in Vector128<short> input, out long value)
 		{
-			return Sse41.X64.IsSupported ? TryParseLongX64(in input, out value) : TryParseLongX86(in input, out value);	//会在JIT时进行静态判断
-		}
-		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
-		private bool TryParseLongX64(in Vector128<short> input, out long value)
-		{
 			var vector = Sse2.Subtract(input, ShortCharA);
 			var r = Sse41.TestZ(vector, ShortN15);
-			value = Sse41.X64.Extract(Ssse3.Shuffle(Sse2.Or(Sse2.ShiftLeftLogical(vector, 4), Sse2.ShiftRightLogical(vector, 8)).AsSByte(), NShuffleMask).AsInt64(), 0);
+			if (Sse41.X64.IsSupported) TryParseLongX64(in vector, out value);
+			else TryParseLongX86(in vector, out value);    //会在JIT时进行静态判断
 			return r;
 		}
-		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
-		private unsafe bool TryParseLongX86(in Vector128<short> input, out long value)
+		[MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
+		private void TryParseLongX64(in Vector128<short> input, out long value)
 		{
-			var vector = Sse2.Subtract(input, ShortCharA);
-			var r = Sse41.TestZ(vector, ShortN15);
-			var v = Ssse3.Shuffle(Sse2.Or(Sse2.ShiftLeftLogical(vector, 4), Sse2.ShiftRightLogical(vector, 8)).AsSByte(), NShuffleMask).AsInt16().AsInt32();
+			value = Sse41.X64.Extract(Ssse3.Shuffle(Sse2.Or(Sse2.ShiftLeftLogical(input, 4), Sse2.ShiftRightLogical(input, 8)).AsSByte(), NShuffleMask).AsInt64(), 0);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
+		private void TryParseLongX86(in Vector128<short> input, out long value)
+		{
+			var v = Ssse3.Shuffle(Sse2.Or(Sse2.ShiftLeftLogical(input, 4), Sse2.ShiftRightLogical(input, 8)).AsSByte(), NShuffleMask).AsInt16().AsInt32();
 #pragma warning disable CS0675 // 对进行了带符号扩展的操作数使用了按位或运算符
 			value = Sse41.Extract(v, 0) | ((long)Sse41.Extract(v, 1) << 32);
 #pragma warning restore CS0675 // 对进行了带符号扩展的操作数使用了按位或运算符
-			return r;
 		}
 		static LongInterface()
 		{
@@ -94,5 +96,6 @@ namespace Sunny.NetCore.Extension.Converter
 		internal Vector128<short> HeightMask = Vector128.Create((short)0xF0);
 		private readonly Vector128<sbyte> ShuffleMask = Vector128.Create(7, -1, 6, -1, 5, -1, 4, -1, 3, -1, 2, -1, 1, -1, 0, -1);
 		internal readonly Vector128<sbyte> NShuffleMask = Vector128.Create(14, 12, 10, 8, 6, 4, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+		private AsciiInterface AsciiInterface = AsciiInterface.Singleton;
 	}
 }
