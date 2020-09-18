@@ -68,6 +68,7 @@ namespace Sunny.NetCore.Extension.Converter
 				{
 					SetLong32(vector.AsInt32(), ref Unsafe.Add(ref Unsafe.As<char, int>(ref Unsafe.AsRef(in str.GetPinnableReference())), 8));
 				}
+				str = str.Remove(19);
 				return str;
 			}
 		}
