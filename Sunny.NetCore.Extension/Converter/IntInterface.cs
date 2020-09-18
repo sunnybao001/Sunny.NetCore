@@ -29,7 +29,7 @@ namespace Sunny.NetCore.Extension.Converter
 		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 		public unsafe bool TryParseInt(string str, out int value)
 		{
-			long vector = default;
+			long vector;
 			Encoding.UTF8.GetBytes(str, new Span<byte>(&vector, 8));
 			return TryParseInt(vector, out value);
 		}

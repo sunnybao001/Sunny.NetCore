@@ -15,13 +15,13 @@ namespace Sunny.NetCore.Extension.Converter
 		private unsafe Vector128<byte> DateToUtf8_10(DateTime value)
 		{
 			var yyyy = value.Year;
-			Vector128<int> numbers = default;   //最多4个值
+			Vector128<int> numbers;   //最多4个值
 			var nf = (int*)&numbers;
 			nf[0] = yyyy / 100;
 			nf[1] = yyyy - nf[0] * 100;
 			nf[2] = value.Month;
 			nf[3] = value.Day;
-			Vector128<sbyte> vector = default;
+			Vector128<sbyte> vector;
 			*(long*)&vector = NumberToUtf8Bit2(in numbers);
 			*((byte*)&vector + 8) = (byte)'-';
 			return Ssse3.Shuffle(vector, TUShuffleMask1).AsByte();
@@ -30,7 +30,7 @@ namespace Sunny.NetCore.Extension.Converter
 		private unsafe Vector256<byte> DateTimeToUtf8_19(DateTime value)
 		{
 			var yyyy = value.Year;
-			Vector256<int> numbers = default;   //最多8个值
+			Vector256<int> numbers;   //最多8个值
 			var nf = (int*)&numbers;
 			nf[0] = yyyy / 100;
 			nf[1] = yyyy - nf[0] * 100;
@@ -39,7 +39,7 @@ namespace Sunny.NetCore.Extension.Converter
 			nf[4] = value.Hour;
 			nf[5] = value.Minute;
 			nf[6] = value.Second;
-			Vector256<sbyte> vector = default;
+			Vector256<sbyte> vector;
 			*(Vector128<byte>*)&vector = NumberToUtf8Bit2(in numbers);
 			*(short*)((byte*)&vector + 16) = *(short*)((byte*)&vector + 12);
 			*((byte*)&vector + 12) = (byte)'-';

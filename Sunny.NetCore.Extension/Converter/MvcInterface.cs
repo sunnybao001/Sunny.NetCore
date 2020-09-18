@@ -41,7 +41,7 @@ namespace Sunny.NetCore.Extension.Converter
 			var metadataGetMethod = contextParam.GetProperty("Metadata").GetGetMethod();
 			il.EmitCall(OpCodes.Callvirt, metadataGetMethod, null);
 			il.EmitCall(OpCodes.Call, metadataGetMethod.ReturnType.GetProperty("ModelType").GetGetMethod(), null);
-			il.EmitCall(OpCodes.Callvirt, typeof(Type).GetProperty(nameof(Type.GUID)).GetGetMethod(), null);
+			il.EmitCall(OpCodes.Callvirt, GetMethodInfo<Type, Guid>(x => x.GUID), null);
 			il.Emit(OpCodes.Dup);
 			il.Emit(OpCodes.Stloc_0);
 			EqualityTypeGuid(il, longguidF, longModelBiner);
@@ -64,7 +64,7 @@ namespace Sunny.NetCore.Extension.Converter
 		{
 			il.Emit(OpCodes.Ldarg_0);
 			il.Emit(OpCodes.Ldfld, guidField);
-			il.EmitCall(OpCodes.Call, typeof(Guid).GetMethod("op_Equality", new Type[] { typeof(Guid), typeof(Guid) }), null);
+			il.EmitCall(OpCodes.Call, GetMethodInfo<Guid, Guid, bool>((x, y) => x == y), null);
 			var label = il.DefineLabel();
 			il.Emit(OpCodes.Brfalse_S, label);
 			il.Emit(OpCodes.Ldarg_0);
@@ -72,7 +72,7 @@ namespace Sunny.NetCore.Extension.Converter
 			il.Emit(OpCodes.Ret);
 			il.MarkLabel(label);
 		}
-		private static object GenerateModelBiner<T, TR>(Type modelBinderInterface)
+		private static object GenerateModelBiner<T, TR>(Type modelBinderInterface) where T : System.Text.Json.Serialization.JsonConverter<TR>
 		{
 			var type = AsciiInterface.ModuleBuilder.DefineType(typeof(T).Name + "_Biner", TypeAttributes.Sealed, null, new Type[] { modelBinderInterface });
 			var converterF = type.DefineField("Converter", typeof(T), FieldAttributes.Private);
@@ -160,6 +160,30 @@ namespace Sunny.NetCore.Extension.Converter
 			type0.GetField("Converter", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(modelBiner, typeof(T).GetField("Singleton", BindingFlags.Public | BindingFlags.Static).GetValue(null));
 			type0.GetField("CompletedTask", BindingFlags.NonPublic | BindingFlags.Instance).SetValue(modelBiner, Task.CompletedTask);
 			return modelBiner;
+		}
+		private static MethodInfo GetMethodInfo<T1, T2, TResult>(System.Linq.Expressions.Expression<Func<T1, T2, TResult>> expression)
+		{
+			return GetMethodInfo((System.Linq.Expressions.LambdaExpression)expression);
+		}
+		private static MethodInfo GetMethodInfo<T, TResult>(System.Linq.Expressions.Expression<Func<T, TResult>> expression)
+		{
+			return GetMethodInfo((System.Linq.Expressions.LambdaExpression)expression);
+		}
+		private static MethodInfo GetMethodInfo(System.Linq.Expressions.LambdaExpression expression)
+		{
+			if (expression.Body is System.Linq.Expressions.MethodCallExpression method)
+			{
+				return method.Method;
+			}
+			if (expression.Body is System.Linq.Expressions.BinaryExpression binary)
+			{
+				return binary.Method;
+			}
+			if (expression.Body is System.Linq.Expressions.MemberExpression property)
+			{
+				return ((PropertyInfo)property.Member).GetGetMethod();
+			}
+			throw new ArgumentException("Invalid Expression. Expression should consist of a Method call only.");
 		}
 	}
 }

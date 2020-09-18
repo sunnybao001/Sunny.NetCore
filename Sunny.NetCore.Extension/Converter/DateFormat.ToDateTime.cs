@@ -28,8 +28,11 @@ namespace Sunny.NetCore.Extension.Converter
 		private unsafe bool Utf8_19ToDate(in Vector256<sbyte> input, out DateTime value)
 		{
 			var vector = Avx2.ExtractVector128(Avx2.PermuteVar8x32(Avx2.Shuffle(input, TDShuffleMask).AsInt32(), Permute), 0).AsSByte();
-			value = default;
-			if (!Utf8Bit2ToNumber(ref vector, out var v)) return false;
+			if (!Utf8Bit2ToNumber(ref vector, out var v))
+			{
+				value = default;
+				return false;
+			}
 			var vf = (short*)&v;
 			value = new DateTime(vf[0] * 100 + vf[1], vf[2], vf[3], vf[4], vf[5], vf[6]);
 			return true;

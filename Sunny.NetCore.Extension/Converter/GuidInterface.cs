@@ -3,6 +3,7 @@ using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 using System.Text.Json;
@@ -58,8 +59,8 @@ namespace Sunny.NetCore.Extension.Converter
 			var vector = Avx2.Subtract(input, ShortCharA);
 			var r = Avx.TestZ(vector, ShortN15);
 			vector = Avx2.And(Avx2.Or(Avx2.ShiftLeftLogical(vector, 4), Avx2.ShiftRightLogical(vector, 8)), FFMask);
-			var v = Sse2.PackUnsignedSaturate(Avx2.ExtractVector128(vector, 0), Avx2.ExtractVector128(vector, 1));
-			value = *(Guid*)&v;	//此处会产生不必要的指令，但没有办法解决，欢迎改进。
+			value = default;
+			Unsafe.As<Guid, Vector128<byte>>(ref value) = Sse2.PackUnsignedSaturate(Avx2.ExtractVector128(vector, 0), Avx2.ExtractVector128(vector, 1));	 //此处有JIT优化，value=default会被忽略。
 			return r;
 		}
 		//使用静态成员变量会造成CORINFO_HELP_GETSHARED_NONGCSTATIC_BASE
@@ -67,5 +68,6 @@ namespace Sunny.NetCore.Extension.Converter
 		internal Vector256<short> ShortN15 = Vector256.Create((sbyte)~15).AsInt16();
 		internal Vector256<short> LowMask = Vector256.Create((short)15);
 		internal Vector256<short> FFMask = Vector256.Create((short)0xFF);
+
 	}
 }
