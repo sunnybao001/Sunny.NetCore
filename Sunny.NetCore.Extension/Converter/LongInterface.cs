@@ -17,7 +17,7 @@ namespace Sunny.NetCore.Extension.Converter
 	public sealed class LongInterface : System.Text.Json.Serialization.JsonConverter<long>
 	{
 		public static readonly LongInterface Singleton;
-		internal LongInterface() { }
+		private LongInterface() { }
 		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 		public override unsafe long Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
 		{

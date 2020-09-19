@@ -11,7 +11,7 @@ namespace Sunny.NetCore.Extension.Converter
 {
 	partial class DateFormat
 	{
-		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
 		private unsafe bool Utf8_10ToDate(in Vector128<sbyte> input, out DateTime value)
 		{
 			var vector = Sse2.Subtract(Sse41.ConvertToVector128Int16(Ssse3.Shuffle(input, TDShuffleMask1)), this.ShortChar01);
@@ -25,7 +25,7 @@ namespace Sunny.NetCore.Extension.Converter
 			value = new DateTime(Sse41.Extract(v, 0) * 100 + Sse41.Extract(v, 2), Sse41.Extract(v, 4), Sse41.Extract(v, 6));    //寄存器优化
 			return true;
 		}
-		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
 		private unsafe bool Utf8_19ToDate(in Vector256<sbyte> input, out DateTime value)
 		{
 			var vector = Avx2.Subtract(Avx2.ConvertToVector256Int16(Avx2.ExtractVector128(Avx2.PermuteVar8x32(Avx2.Shuffle(input, TDShuffleMask).AsInt32(), Permute), 0).AsSByte()), ShortChar0);

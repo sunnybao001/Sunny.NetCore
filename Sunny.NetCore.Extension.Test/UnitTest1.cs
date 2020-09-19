@@ -2,6 +2,8 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Sunny.NetCore.Extension.Converter;
 using Sunny.NetCore.Extension.Generator;
 using System;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 
 namespace Sunny.NetCore.Extension.Test
 {

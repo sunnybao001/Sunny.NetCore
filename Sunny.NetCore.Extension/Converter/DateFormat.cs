@@ -50,33 +50,24 @@ namespace Sunny.NetCore.Extension.Converter
 			{
 				var str = AsciiInterface.FastAllocateString(10);
 				var vector = Avx2.ConvertToVector256Int16(DateToUtf8_10(value));
-				Unsafe.As<char, Vector128<short>>(ref Unsafe.AsRef(in str.GetPinnableReference())) = Avx2.ExtractVector128(vector, 0);
+				Unsafe.As<char, Vector128<short>>(ref Unsafe.AsRef(in str.GetPinnableReference())) = vector.GetLower();
 				Unsafe.Add(ref Unsafe.As<char, int>(ref Unsafe.AsRef(in str.GetPinnableReference())), 4) = vector.AsInt32().GetElement(4);
 				return str;
 			}
 			else
 			{
-				var str = AsciiInterface.FastAllocateString(20);
+				var str = AsciiInterface.FastAllocateString(19);
 				var r = DateTimeToUtf8_19(value);
-				Unsafe.As<char, Vector256<short>>(ref Unsafe.AsRef(in str.GetPinnableReference())) = Avx2.ConvertToVector256Int16(Avx2.ExtractVector128(r, 0));
-				var vector = Avx2.ConvertToVector256Int16(Avx2.ExtractVector128(r, 1));
-				if (Sse41.X64.IsSupported)
-				{
-					Unsafe.Add(ref Unsafe.As<char, long>(ref Unsafe.AsRef(in str.GetPinnableReference())), 4) = vector.AsInt64().GetElement(0);
-				}
-				else
-				{
-					SetLong32(vector.AsInt32(), ref Unsafe.Add(ref Unsafe.As<char, int>(ref Unsafe.AsRef(in str.GetPinnableReference())), 8));
-				}
-				str = str.Remove(19);
+				Set38(Avx2.ConvertToVector256Int16(Avx2.ExtractVector128(r, 0)), Avx2.ConvertToVector256Int16(Avx2.ExtractVector128(r, 1)), ref Unsafe.AsRef(in str.GetPinnableReference()));
 				return str;
 			}
 		}
 		[MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-		static void SetLong32(Vector256<int> vector, ref int output)
+		private static void Set38(Vector256<short> vector0, Vector256<short> vector1, ref char output)
 		{
-			output = vector.GetElement(0);
-			Unsafe.Add(ref output, 1) = vector.GetElement(1);
+			Unsafe.As<char, Vector256<short>>(ref output) = vector0;
+			Unsafe.Add(ref Unsafe.As<char, int>(ref output), 8) = vector1.AsInt32().GetElement(0);
+			Unsafe.Add(ref Unsafe.As<char, short>(ref output), 18) = vector1.GetElement(2);
 		}
 		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 		public unsafe bool TryParseDateTime(string str, out DateTime value)
@@ -84,7 +75,7 @@ namespace Sunny.NetCore.Extension.Converter
 			var vector = AsciiInterface.UnicodeToAscii_32(ref Unsafe.As<char, Vector256<short>>(ref Unsafe.AsRef(in str.GetPinnableReference())));
 			return TryParseDateTime(new ReadOnlySpan<byte>(&vector, str.Length), out value);
 		}
-		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
 		private unsafe bool TryParseDateTime(ReadOnlySpan<byte> input, out DateTime value)
 		{
 			bool success = true;

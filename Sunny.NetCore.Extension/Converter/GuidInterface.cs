@@ -53,7 +53,7 @@ namespace Sunny.NetCore.Extension.Converter
 			vector = Avx2.Add(Avx2.Or(Avx2.ShiftRightLogical(vector, 4), Avx2.ShiftLeftLogical(Avx2.And(vector, LowMask), 8)), ShortCharA);
 			return vector;
 		}
-		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
 		private unsafe bool TryParseGuid(in Vector256<short> input, out Guid value)
 		{
 			var vector = Avx2.Subtract(input, ShortCharA);
