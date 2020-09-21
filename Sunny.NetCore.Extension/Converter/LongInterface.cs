@@ -57,7 +57,7 @@ namespace Sunny.NetCore.Extension.Converter
 		[MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
 		private Vector128<short> LongToUtf8_16X64(long value)
 		{
-			return Ssse3.Shuffle(Vector128.Create(value, value).AsSByte(), ShuffleMask).AsInt16();
+			return Ssse3.Shuffle(Vector128.CreateScalarUnsafe(value).AsSByte(), ShuffleMask).AsInt16();
 		}
 		[MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
 		private Vector128<short> LongToUtf8_16X86(int value0, int value1)
@@ -81,10 +81,9 @@ namespace Sunny.NetCore.Extension.Converter
 		[MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
 		private void TryParseLongX86(in Vector128<short> input, out long value)
 		{
-			var v = Ssse3.Shuffle(Sse2.Or(Sse2.ShiftLeftLogical(input, 4), Sse2.ShiftRightLogical(input, 8)).AsSByte(), NShuffleMask).AsInt16().AsInt32();
-#pragma warning disable CS0675 // 对进行了带符号扩展的操作数使用了按位或运算符
-			value = Sse41.Extract(v, 0) | ((long)Sse41.Extract(v, 1) << 32);
-#pragma warning restore CS0675 // 对进行了带符号扩展的操作数使用了按位或运算符
+			var v = Ssse3.Shuffle(Sse2.Or(Sse2.ShiftLeftLogical(input, 4), Sse2.ShiftRightLogical(input, 8)).AsSByte(), NShuffleMask).AsInt32();
+			value = Sse41.Extract(v, 0);
+			Unsafe.Add(ref Unsafe.As<long, int>(ref value), 1) = Sse41.Extract(v, 1);
 		}
 		static LongInterface()
 		{

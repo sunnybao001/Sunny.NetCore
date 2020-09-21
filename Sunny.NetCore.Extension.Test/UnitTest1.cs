@@ -32,6 +32,10 @@ namespace Sunny.NetCore.Extension.Test
 			var str = LongInterface.Singleton.LongToString(l);
 			Assert.IsTrue(LongInterface.Singleton.TryParse(str, out var nl));
 			Assert.AreEqual(l, nl);
+			l = 1274725414896843596;
+			str = LongInterface.Singleton.LongToString(l);
+			Assert.IsTrue(LongInterface.Singleton.TryParse(str, out nl));
+			Assert.AreEqual(l, nl);
 		}
 		[TestMethod]
 		public void TestInt()

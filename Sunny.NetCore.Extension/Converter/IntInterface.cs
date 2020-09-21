@@ -36,33 +36,34 @@ namespace Sunny.NetCore.Extension.Converter
 		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 		public unsafe string IntToString(int value)
 		{
+			var str = AsciiInterface.FastAllocateString(8);
 			var vector = IntToUtf8_8(value);
-			var str = Sse41.ConvertToVector128Int16((byte*)&vector);
-			return new string((char*)&str, 0, 8);
+			Unsafe.As<char, Vector128<short>>(ref Unsafe.AsRef(in str.GetPinnableReference())) = Sse41.ConvertToVector128Int16((byte*)&vector);
+			return str;
 		}
 		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 		private unsafe long IntToUtf8_8(int value)
 		{
-			var shuffle = Ssse3.Shuffle(*(Vector128<sbyte>*)&value, ShuffleMask);
-			return (((*(long*)&shuffle & HeightMask) >> 4) | ((*(long*)&shuffle & LowMask) << 8)) + ShortCharA;
+			var shuffle = Extract64(Ssse3.Shuffle(Vector128.CreateScalarUnsafe(value).AsSByte(), ShuffleMask).AsInt16());
+			return (((shuffle & HeightMask) >> 4) | ((shuffle & LowMask) << 8)) + ShortCharA;
 		}
 		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 		private unsafe bool TryParseInt(long input, out int value)
 		{
 			var vector = input - ShortCharA;
-			var r = (vector & ShortN15) != 0;
+			var r = (vector & ShortN15) == 0;
 			vector = (vector << 4) | (vector >> 8);
-			value = Sse41.Extract(Ssse3.Shuffle(*(Vector128<sbyte>*)&vector, NShuffleMask).AsInt32(), 0);
+			value = Sse41.Extract(Ssse3.Shuffle(Vector128.CreateScalar(vector).AsSByte(), NShuffleMask).AsInt32(), 0);
 			return r;
 		}
 		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
-		private static long Extract64(Vector128<short> value)
+		private static unsafe long Extract64(Vector128<short> value)
 		{
 			if (Sse41.X64.IsSupported) return Sse41.X64.Extract(value.AsInt64(), 0);
 			var v = value.AsInt32();
-#pragma warning disable CS0675 // 对进行了带符号扩展的操作数使用了按位或运算符
-			return Sse41.Extract(v, 0) | ((long)Sse41.Extract(v, 1) << 32);
-#pragma warning restore CS0675 // 对进行了带符号扩展的操作数使用了按位或运算符
+			long r = Sse41.Extract(v, 0);
+			((int*)&r)[1] = Sse41.Extract(v, 1);
+			return r;
 		}
 		private long ShortCharA = Extract64(LongInterface.Singleton.ShortCharA);
 		private long ShortN15 = Extract64(LongInterface.Singleton.ShortN15);
@@ -70,5 +71,6 @@ namespace Sunny.NetCore.Extension.Converter
 		private long HeightMask = Extract64(LongInterface.Singleton.HeightMask);
 		private readonly Vector128<sbyte> ShuffleMask = Vector128.Create(3, -1, 2, -1, 1, -1, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0);
 		private readonly Vector128<sbyte> NShuffleMask = Vector128.Create(6, 4, 2, 0, -1, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0);
+		private AsciiInterface AsciiInterface = AsciiInterface.Singleton;
 	}
 }
