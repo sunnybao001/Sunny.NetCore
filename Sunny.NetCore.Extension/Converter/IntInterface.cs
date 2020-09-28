@@ -41,13 +41,13 @@ namespace Sunny.NetCore.Extension.Converter
 			Unsafe.As<char, Vector128<short>>(ref Unsafe.AsRef(in str.GetPinnableReference())) = Sse41.ConvertToVector128Int16((byte*)&vector);
 			return str;
 		}
-		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
 		private unsafe long IntToUtf8_8(int value)
 		{
-			var shuffle = Extract64(Ssse3.Shuffle(Vector128.CreateScalarUnsafe(value).AsSByte(), ShuffleMask).AsInt16());
+			var shuffle = Extract64(Ssse3.Shuffle(Vector128.CreateScalarUnsafe(value).AsSByte(), ShuffleMask));
 			return (((shuffle & HeightMask) >> 4) | ((shuffle & LowMask) << 8)) + ShortCharA;
 		}
-		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
+		[MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
 		private unsafe bool TryParseInt(long input, out int value)
 		{
 			var vector = input - ShortCharA;
@@ -56,19 +56,17 @@ namespace Sunny.NetCore.Extension.Converter
 			value = Sse41.Extract(Ssse3.Shuffle(Vector128.CreateScalar(vector).AsSByte(), NShuffleMask).AsInt32(), 0);
 			return r;
 		}
-		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
-		private static unsafe long Extract64(Vector128<short> value)
+		[MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
+		internal static unsafe long Extract64(Vector128<sbyte> value)
 		{
-			if (Sse41.X64.IsSupported) return Sse41.X64.Extract(value.AsInt64(), 0);
+			if (Sse41.X64.IsSupported) return Sse41.X64.Extract(value.AsInt64(), 0); //会在JIT时进行静态判断
 			var v = value.AsInt32();
-			long r = Sse41.Extract(v, 0);
-			((int*)&r)[1] = Sse41.Extract(v, 1);
-			return r;
+			return (long)((uint)Sse41.Extract(v, 0) | ((ulong)Sse41.Extract(v, 1) << 32));
 		}
-		private long ShortCharA = Extract64(LongInterface.Singleton.ShortCharA);
-		private long ShortN15 = Extract64(LongInterface.Singleton.ShortN15);
-		private long LowMask = Extract64(LongInterface.Singleton.LowMask);
-		private long HeightMask = Extract64(LongInterface.Singleton.HeightMask);
+		private long ShortCharA = Extract64(LongInterface.Singleton.ShortCharA.AsSByte());
+		private long ShortN15 = Extract64(LongInterface.Singleton.ShortN15.AsSByte());
+		private long LowMask = Extract64(LongInterface.Singleton.LowMask.AsSByte());
+		private long HeightMask = Extract64(LongInterface.Singleton.HeightMask.AsSByte());
 		private readonly Vector128<sbyte> ShuffleMask = Vector128.Create(3, -1, 2, -1, 1, -1, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0);
 		private readonly Vector128<sbyte> NShuffleMask = Vector128.Create(6, 4, 2, 0, -1, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0);
 		private AsciiInterface AsciiInterface = AsciiInterface.Singleton;

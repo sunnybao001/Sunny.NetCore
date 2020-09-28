@@ -69,21 +69,8 @@ namespace Sunny.NetCore.Extension.Converter
 		{
 			var vector = Sse2.Subtract(input, ShortCharA);
 			var r = Sse41.TestZ(vector, ShortN15);
-			if (Sse41.X64.IsSupported) TryParseLongX64(in vector, out value);
-			else TryParseLongX86(in vector, out value);    //会在JIT时进行静态判断
+			value = IntInterface.Extract64(Ssse3.Shuffle(Sse2.Or(Sse2.ShiftLeftLogical(vector, 4), Sse2.ShiftRightLogical(vector, 8)).AsSByte(), NShuffleMask));
 			return r;
-		}
-		[MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-		private void TryParseLongX64(in Vector128<short> input, out long value)
-		{
-			value = Sse41.X64.Extract(Ssse3.Shuffle(Sse2.Or(Sse2.ShiftLeftLogical(input, 4), Sse2.ShiftRightLogical(input, 8)).AsSByte(), NShuffleMask).AsInt64(), 0);
-		}
-		[MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-		private void TryParseLongX86(in Vector128<short> input, out long value)
-		{
-			var v = Ssse3.Shuffle(Sse2.Or(Sse2.ShiftLeftLogical(input, 4), Sse2.ShiftRightLogical(input, 8)).AsSByte(), NShuffleMask).AsInt32();
-			value = Sse41.Extract(v, 0);
-			Unsafe.Add(ref Unsafe.As<long, int>(ref value), 1) = Sse41.Extract(v, 1);
 		}
 		static LongInterface()
 		{
