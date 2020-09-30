@@ -22,7 +22,15 @@ namespace Sunny.NetCore.Extension.Converter
 			}
 			vector = Sse2.MultiplyLow(vector, this.Int101);
 			var v = Ssse3.HorizontalAdd(vector, vector).AsByte();
-			value = new DateTime(Sse41.Extract(v, 0) * 100 + Sse41.Extract(v, 2), Sse41.Extract(v, 4), Sse41.Extract(v, 6));    //寄存器优化
+			var year = Sse41.Extract(v, 0) * 100 + Sse41.Extract(v, 2);
+			var month = Sse41.Extract(v, 4);
+			var day = Sse41.Extract(v, 6);
+			if (year < 1 | year > 9999 | month < 1 | month > 12 | day < 1 | day > 31)
+			{
+				value = default;
+				return false;
+			}
+			value = new DateTime(year, month, day);    //寄存器优化
 			return true;
 		}
 		[MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
@@ -36,13 +44,18 @@ namespace Sunny.NetCore.Extension.Converter
 			}
 			var v0 = Avx2.MultiplyLow(vector, Int10).AsInt64();
 			var v = Ssse3.HorizontalAdd(Avx2.ExtractVector128(v0, 0).AsInt16(), Avx2.ExtractVector128(v0, 1).AsInt16()).AsByte();    //双数位置的乘数为0，所以不用担心short溢出
-			value = new DateTime(Sse41.Extract(v, 0) * 100 + Sse41.Extract(v, 2),
-				Sse41.Extract(v, 4),
-				Sse41.Extract(v, 6),
-				Sse41.Extract(v, 8),
-				Sse41.Extract(v, 10),
-				Sse41.Extract(v, 12)
-				);    //寄存器优化
+			var year = Sse41.Extract(v, 0) * 100 + Sse41.Extract(v, 2);
+			var month = Sse41.Extract(v, 4);
+			var day = Sse41.Extract(v, 6);
+			var hour = Sse41.Extract(v, 8);
+			var minu = Sse41.Extract(v, 10);
+			var seco = Sse41.Extract(v, 12);
+			if (year < 1 | year > 9999 | month < 1 | month > 12 | day < 1 | day > 31 | hour < 0 | hour > 24 | minu < 0 | minu > 60 | seco < 0 | seco > 60)
+			{
+				value = default;
+				return false;
+			}
+			value = new DateTime(year, month, day, hour, minu, seco);    //寄存器优化
 			return true;
 		}
 		private Vector256<short> Int10 = Vector256.Create(10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1, 10, 1);
