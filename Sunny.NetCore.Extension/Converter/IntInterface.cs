@@ -52,7 +52,7 @@ namespace Sunny.NetCore.Extension.Converter
 		{
 			var vector = input - ShortCharA;
 			var r = (vector & ShortN15) == 0;
-			vector = (vector << 4) | (vector >> 8);
+			vector = (long)((((ulong)vector) << 4) | (((ulong)vector) >> 8));
 			value = Sse41.Extract(Ssse3.Shuffle(Vector128.CreateScalar(vector).AsSByte(), NShuffleMask).AsInt32(), 0);
 			return r;
 		}

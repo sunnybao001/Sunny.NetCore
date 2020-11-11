@@ -23,7 +23,7 @@ namespace Sunny.NetCore.Extension.Threading
         private TaskCompletionSource<int> WaitTaskSource = new TaskCompletionSource<int>();
         private readonly ConcurrentQueue<T> DataStream = new ConcurrentQueue<T>();
         private int counter = 0;
-        private Exception exception;
+        private volatile Exception exception;   //防止变量被优化到寄存器中
         /// <summary>
         /// 将新的一行数据添加到缓冲区
         /// </summary>
