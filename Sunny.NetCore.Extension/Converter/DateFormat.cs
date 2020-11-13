@@ -78,6 +78,7 @@ namespace Sunny.NetCore.Extension.Converter
 		[MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
 		private unsafe bool TryParseDateTime(ReadOnlySpan<byte> input, out DateTime value)
 		{
+			Unsafe.SkipInit(out value);
 			bool success = true;
 			if (input.Length == 19 | input.Length == 20) return Utf8_19ToDate(in Unsafe.As<byte, Vector256<sbyte>>(ref Unsafe.AsRef(in input.GetPinnableReference())), out value);
 			if (input.Length == 10) return Utf8_10ToDate(in Unsafe.As<byte, Vector128<sbyte>>(ref Unsafe.AsRef(in input.GetPinnableReference())), out value);
@@ -95,13 +96,11 @@ namespace Sunny.NetCore.Extension.Converter
 				success &= System.Buffers.Text.Utf8Parser.TryParse(input.Slice(start, length), out int day, out _);
 				if (!success)
 				{
-					value = default;
 					return false;
 				}
 				value = new DateTime(year, month, day);
 				return true;
 			}
-			value = default;
 			return false;
 		}
 		static DateFormat()

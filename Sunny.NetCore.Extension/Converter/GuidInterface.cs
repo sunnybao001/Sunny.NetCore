@@ -44,7 +44,8 @@ namespace Sunny.NetCore.Extension.Converter
 		public unsafe bool TryParse(string str, out Guid value)
 		{
 			var vector = AsciiInterface.UnicodeToAscii_32(ref Unsafe.As<char, Vector256<short>>(ref Unsafe.AsRef(in str.GetPinnableReference()))).AsInt16();
-			return TryParseGuid(in vector, out value);
+			var r = TryParseGuid(in vector, out value);
+			return r;
 		}
 		[MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
 		private unsafe Vector256<short> GuidToUtf8_32(in Vector128<byte> input)
