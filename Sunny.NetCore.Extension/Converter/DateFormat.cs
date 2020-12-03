@@ -50,8 +50,8 @@ namespace Sunny.NetCore.Extension.Converter
 			{
 				var str = AsciiInterface.FastAllocateString(10);
 				var vector = Avx2.ConvertToVector256Int16(DateToUtf8_10(value));
-				Unsafe.As<char, Vector128<short>>(ref Unsafe.AsRef(in str.GetPinnableReference())) = vector.GetLower();
-				Unsafe.Add(ref Unsafe.As<char, int>(ref Unsafe.AsRef(in str.GetPinnableReference())), 4) = vector.AsInt32().GetElement(4);
+				AsciiInterface.StringTo<char, Vector128<short>>(str) = vector.GetLower();
+				Unsafe.Add(ref AsciiInterface.StringTo<char, int>(str), 4) = vector.AsInt32().GetElement(4);
 				return str;
 			}
 			else
@@ -72,7 +72,7 @@ namespace Sunny.NetCore.Extension.Converter
 		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 		public unsafe bool TryParseDateTime(string str, out DateTime value)
 		{
-			var vector = AsciiInterface.UnicodeToAscii_32(ref Unsafe.As<char, Vector256<short>>(ref Unsafe.AsRef(in str.GetPinnableReference())));
+			var vector = AsciiInterface.UnicodeToAscii_32(ref AsciiInterface.StringTo<char, Vector256<short>>(str));
 			return TryParseDateTime(new ReadOnlySpan<byte>(&vector, str.Length), out value);
 		}
 		[MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
@@ -80,8 +80,8 @@ namespace Sunny.NetCore.Extension.Converter
 		{
 			Unsafe.SkipInit(out value);
 			bool success = true;
-			if (input.Length == 19 | input.Length == 20) return Utf8_19ToDate(in Unsafe.As<byte, Vector256<sbyte>>(ref Unsafe.AsRef(in input.GetPinnableReference())), out value);
-			if (input.Length == 10) return Utf8_10ToDate(in Unsafe.As<byte, Vector128<sbyte>>(ref Unsafe.AsRef(in input.GetPinnableReference())), out value);
+			if (input.Length == 19 | input.Length == 20) return Utf8_19ToDate(in AsciiInterface.StringTo<byte, Vector256<sbyte>>(input), out value);
+			if (input.Length == 10) return Utf8_10ToDate(in AsciiInterface.StringTo<byte, Vector128<sbyte>>(input), out value);
 			if (input.Length < 10 & input.Length > 7)
 			{
 				int start = 0, length = 4;

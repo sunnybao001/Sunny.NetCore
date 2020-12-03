@@ -24,7 +24,7 @@ namespace Sunny.NetCore.Extension.Converter
 			if (reader.TokenType == JsonTokenType.Number) return reader.GetInt64();
 			var str = reader.ValueSpan;
 			if (str.Length != 16) throw new InvalidCastException();
-			if (TryParseLong(in Unsafe.As<byte, Vector128<short>>(ref Unsafe.AsRef(in str.GetPinnableReference())), out var v)) return v;
+			if (TryParseLong(in AsciiInterface.StringTo<byte, Vector128<short>>(str), out var v)) return v;
 			throw new InvalidCastException();
 		}
 		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
@@ -36,7 +36,7 @@ namespace Sunny.NetCore.Extension.Converter
 		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 		public unsafe bool TryParse(string str, out long value)
 		{
-			var vector = AsciiInterface.UnicodeToAscii_16(in Unsafe.As<char, Vector256<short>>(ref Unsafe.AsRef(in str.GetPinnableReference()))).AsInt16();
+			var vector = AsciiInterface.UnicodeToAscii_16(in AsciiInterface.StringTo<char, Vector256<short>>(str)).AsInt16();
 			var r = TryParseLong(in vector, out value);
 			return r;
 		}

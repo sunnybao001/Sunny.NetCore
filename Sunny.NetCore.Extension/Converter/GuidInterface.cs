@@ -21,7 +21,7 @@ namespace Sunny.NetCore.Extension.Converter
 			var str = reader.ValueSpan;
 			if (str.Length == 32)
 			{
-				if (TryParseGuid(in Unsafe.As<byte, Vector256<short>>(ref Unsafe.AsRef(in str.GetPinnableReference())), out var v)) return v;
+				if (TryParseGuid(in AsciiInterface.StringTo<byte, Vector256<short>>(str), out var v)) return v;
 			}
 			else return reader.GetGuid();
 			throw new InvalidCastException();
@@ -37,13 +37,13 @@ namespace Sunny.NetCore.Extension.Converter
 		{
 			var str = AsciiInterface.FastAllocateString(32);
 			var vector = GuidToUtf8_32(in Unsafe.As<Guid, Vector128<byte>>(ref value)).AsByte();
-			AsciiInterface.AsciiToUnicode(vector, ref Unsafe.As<char, Vector256<short>>(ref Unsafe.AsRef(in str.GetPinnableReference())));
+			AsciiInterface.AsciiToUnicode(vector, ref AsciiInterface.StringTo<char, Vector256<short>>(str));
 			return str;
 		}
 		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 		public unsafe bool TryParse(string str, out Guid value)
 		{
-			var vector = AsciiInterface.UnicodeToAscii_32(ref Unsafe.As<char, Vector256<short>>(ref Unsafe.AsRef(in str.GetPinnableReference()))).AsInt16();
+			var vector = AsciiInterface.UnicodeToAscii_32(ref AsciiInterface.StringTo<char, Vector256<short>>(str)).AsInt16();
 			var r = TryParseGuid(in vector, out value);
 			return r;
 		}

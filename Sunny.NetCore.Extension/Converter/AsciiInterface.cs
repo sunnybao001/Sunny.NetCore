@@ -33,6 +33,8 @@ namespace Sunny.NetCore.Extension.Converter
 			output = Avx2.ConvertToVector256Int16(Avx2.ExtractVector128(input, 0));
 			Unsafe.Add(ref output, 1) = Avx2.ConvertToVector256Int16(Avx2.ExtractVector128(input, 1));
 		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		public static ref TR StringTo<T, TR>(ReadOnlySpan<T> str) => ref Unsafe.As<T, TR>(ref Unsafe.AsRef(in str.GetPinnableReference()));
 		private Vector256<short> AsciiMax = Vector256.Create((short)sbyte.MaxValue);
 		public static readonly System.Reflection.Emit.ModuleBuilder ModuleBuilder = System.Reflection.Emit.AssemblyBuilder.DefineDynamicAssembly(new System.Reflection.AssemblyName("Sunny.NetCore.Extrnsion.Emit"), System.Reflection.Emit.AssemblyBuilderAccess.Run).DefineDynamicModule("Converter");
 		internal Func<int, string> FastAllocateString = (Func<int, string>)typeof(string).GetMethod("FastAllocateString", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static).CreateDelegate(typeof(Func<int, string>));
