@@ -61,6 +61,9 @@ namespace Sunny.NetCore.Extension.Test
 
 			Assert.IsTrue(DateFormat.Singleton.TryParseDateTime("2020-8-8", out dt));
 			Assert.AreEqual(dt, new DateTime(2020, 8, 8));
+
+			Assert.IsTrue(DateFormat.Singleton.TryParseDateTime("1608284353", out dt));
+			Assert.AreEqual(dt, new DateTime(2020, 12, 18, 9, 39, 13));
 		}
 	}
 }

@@ -96,16 +96,26 @@ namespace Sunny.NetCore.Extension.Generator
 			long id = ticks << 1;
 			byte* f = (byte*)&id;   //随机数占用24位，剩余40位，前1位舍去，密度为DateTime的41位，大约半秒多改变一次值
 			byte* rf = (byte*)&r;
-			f[0] = rf[0];
-			f[1] = rf[1];
-			f[2] = rf[2];
+			if (X86Base.IsSupported)
+			{
+				f[0] = rf[0];
+				f[1] = rf[1];
+				f[2] = rf[2];
+			}
+			else
+			{
+				f[5] = rf[1];
+				f[6] = rf[2];
+				f[7] = rf[3];
+			}
 			return id;
 		}
 		private unsafe static long GetPrefix(long ticks)
 		{
 			long id = ticks << 1;
 			byte* f = (byte*)&id;
-			f[0] = f[1] = f[2] = 0;
+			if (X86Base.IsSupported) f[0] = f[1] = f[2] = 0;
+			else f[5] = f[6] = f[7] = 0;
 			return id;
 		}
 		private static object lc = new object();

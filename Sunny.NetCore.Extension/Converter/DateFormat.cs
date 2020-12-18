@@ -81,7 +81,17 @@ namespace Sunny.NetCore.Extension.Converter
 			Unsafe.SkipInit(out value);
 			bool success = true;
 			if (input.Length == 19 | input.Length == 20) return Utf8_19ToDate(in AsciiInterface.StringTo<byte, Vector256<sbyte>>(input), out value);
-			if (input.Length == 10) return Utf8_10ToDate(in AsciiInterface.StringTo<byte, Vector128<sbyte>>(input), out value);
+			if (input.Length == 10 | input.Length == 11)
+			{
+				var v128 = AsciiInterface.StringTo<byte, Vector128<sbyte>>(input);
+				if (IsNumber(v128, input.Length))
+				{
+					System.Buffers.Text.Utf8Parser.TryParse(input, out long lv, out _);
+					value = new DateTime(1970, 1, 1).AddTicks(TimeSpan.TicksPerSecond * lv);
+					return true;
+				}
+				return Utf8_10ToDate(in v128, out value);
+			}
 			if (input.Length < 10 & input.Length > 7)
 			{
 				int start = 0, length = 4;
@@ -103,6 +113,13 @@ namespace Sunny.NetCore.Extension.Converter
 			}
 			return false;
 		}
+		[MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
+		private bool IsNumber(Vector128<sbyte> input, int length)
+		{
+			var success = Sse2.MoveMask(Sse2.CompareEqual(Sse2.And(Sse2.Subtract(input, SByteChat01), SByteN15), SByte0));
+			var test = (1 << length) - 1;
+			return test == (success & test);
+		}
 		static DateFormat()
 		{
 			Singleton = new DateFormat();
@@ -115,6 +132,9 @@ namespace Sunny.NetCore.Extension.Converter
 		internal readonly Vector128<short> ShortChar01;
 		internal readonly Vector128<short> ShortD1;
 		internal readonly Vector128<short> ShortBit2X10Vector1;
+		private readonly Vector128<sbyte> SByte0 = Vector128.Create((sbyte)0);
+		private readonly Vector128<sbyte> SByteChat01 = Vector128.Create((sbyte)'0');
+		private readonly Vector128<sbyte> SByteN15 = Vector128.Create((sbyte)~15);
 		private readonly AsciiInterface AsciiInterface = AsciiInterface.Singleton;
 	}
 }
