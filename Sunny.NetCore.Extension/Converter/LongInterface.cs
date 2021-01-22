@@ -30,7 +30,7 @@ namespace Sunny.NetCore.Extension.Converter
 		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 		public override unsafe void Write(Utf8JsonWriter writer, long value, JsonSerializerOptions options)
 		{
-			var vector = LongToUtf8_16(value);
+			var vector = Sse41.X64.IsSupported ? LongToUtf8_16X64(value) : LongToUtf8_16X86((int)value, (int)((ulong)value >> 32));
 			writer.WriteStringValue(new ReadOnlySpan<byte>(&vector, 16));
 		}
 		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
@@ -44,25 +44,21 @@ namespace Sunny.NetCore.Extension.Converter
 		public unsafe string LongToString(long value)
 		{
 			var str = AsciiInterface.FastAllocateString(16);
-			var vector = Avx2.ConvertToVector256Int16(LongToUtf8_16(value));
+			var vector = Avx2.ConvertToVector256Int16(Sse41.X64.IsSupported ? LongToUtf8_16X64(value) : LongToUtf8_16X86((int)value, (int)((ulong)value >> 32)));
 			Unsafe.As<char, Vector256<short>>(ref Unsafe.AsRef(in str.GetPinnableReference())) = vector;
 			return str;
 		}
 		[MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-		private unsafe Vector128<byte> LongToUtf8_16(long value)
+		private Vector128<byte> LongToUtf8_16X64(long value)
 		{
-			var vector = Sse41.X64.IsSupported ? LongToUtf8_16X64(value) : LongToUtf8_16X86((int)value, (int)(value >> 32));	//会在JIT时进行静态判断
+			var vector = Ssse3.Shuffle(Vector128.CreateScalarUnsafe(value).AsSByte(), ShuffleMask).AsInt16();
 			return Sse2.Add(Sse2.Or(Sse2.ShiftRightLogical(vector, 4), Sse2.ShiftLeftLogical(Sse2.And(vector, LowMask), 8)), ShortCharA).AsByte();
 		}
 		[MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-		private Vector128<short> LongToUtf8_16X64(long value)
+		private Vector128<byte> LongToUtf8_16X86(int value0, int value1)
 		{
-			return Ssse3.Shuffle(Vector128.CreateScalarUnsafe(value).AsSByte(), ShuffleMask).AsInt16();
-		}
-		[MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-		private Vector128<short> LongToUtf8_16X86(int value0, int value1)
-		{
-			return Ssse3.Shuffle(Vector128.Create(value0, value1, value0, value0).AsSByte(), ShuffleMask).AsInt16();	//寄存器优化
+			var vector = Ssse3.Shuffle(Sse41.Insert(Vector128.CreateScalarUnsafe(value0), value1, 1).AsSByte(), ShuffleMask).AsInt16();
+			return Sse2.Add(Sse2.Or(Sse2.ShiftRightLogical(vector, 4), Sse2.ShiftLeftLogical(Sse2.And(vector, LowMask), 8)), ShortCharA).AsByte();
 		}
 		[MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
 		private bool TryParseLong(in Vector128<short> input, out long value)
