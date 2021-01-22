@@ -30,7 +30,7 @@ namespace Sunny.NetCore.Extension.Converter
 		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 		public override unsafe void Write(Utf8JsonWriter writer, long value, JsonSerializerOptions options)
 		{
-			var vector = Sse41.X64.IsSupported ? LongToUtf8_16X64(value) : LongToUtf8_16X86((int)value, (int)((ulong)value >> 32));
+			var vector = LongToUtf8_16(value);
 			writer.WriteStringValue(new ReadOnlySpan<byte>(&vector, 16));
 		}
 		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
@@ -44,20 +44,22 @@ namespace Sunny.NetCore.Extension.Converter
 		public unsafe string LongToString(long value)
 		{
 			var str = AsciiInterface.FastAllocateString(16);
-			var vector = Avx2.ConvertToVector256Int16(Sse41.X64.IsSupported ? LongToUtf8_16X64(value) : LongToUtf8_16X86((int)value, (int)((ulong)value >> 32)));
+			var vector = Avx2.ConvertToVector256Int16(LongToUtf8_16(value));
 			Unsafe.As<char, Vector256<short>>(ref Unsafe.AsRef(in str.GetPinnableReference())) = vector;
 			return str;
 		}
 		[MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-		private Vector128<byte> LongToUtf8_16X64(long value)
+		private Vector128<byte> LongToUtf8_16(long value)
 		{
-			var vector = Ssse3.Shuffle(Vector128.CreateScalarUnsafe(value).AsSByte(), ShuffleMask).AsInt16();
-			return Sse2.Add(Sse2.Or(Sse2.ShiftRightLogical(vector, 4), Sse2.ShiftLeftLogical(Sse2.And(vector, LowMask), 8)), ShortCharA).AsByte();
-		}
-		[MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-		private Vector128<byte> LongToUtf8_16X86(int value0, int value1)
-		{
-			var vector = Ssse3.Shuffle(Sse41.Insert(Vector128.CreateScalarUnsafe(value0), value1, 1).AsSByte(), ShuffleMask).AsInt16();
+			Vector128<sbyte> v;
+			if (Sse41.X64.IsSupported) v = Vector128.CreateScalarUnsafe(value).AsSByte();
+			else
+			{
+				var value0 = (int)value;
+				var value1 = (int)((ulong)value >> 32);
+				v = Sse41.Insert(Vector128.CreateScalarUnsafe(value0), value1, 1).AsSByte();
+			}
+			var vector = Ssse3.Shuffle(v, ShuffleMask).AsInt16();
 			return Sse2.Add(Sse2.Or(Sse2.ShiftRightLogical(vector, 4), Sse2.ShiftLeftLogical(Sse2.And(vector, LowMask), 8)), ShortCharA).AsByte();
 		}
 		[MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
