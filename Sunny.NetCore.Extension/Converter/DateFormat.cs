@@ -116,7 +116,8 @@ namespace Sunny.NetCore.Extension.Converter
 		[MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
 		private bool IsNumber(Vector128<sbyte> input, int length)
 		{
-			var success = Sse2.MoveMask(Sse2.CompareEqual(Sse2.And(Sse2.Subtract(input, SByteChat01), SByteN15), SByte0));
+			var success = Sse2.MoveMask(Sse2.CompareEqual(Sse2.And(Sse2.Subtract(input, SByteChat01), SByteN15), Vector128<sbyte>.Zero));
+			//这里本来应该用TZCNT，但.NET不支持
 			var test = (1 << length) - 1;
 			return test == (success & test);
 		}
@@ -132,7 +133,6 @@ namespace Sunny.NetCore.Extension.Converter
 		internal readonly Vector128<short> ShortChar01;
 		internal readonly Vector128<short> ShortD1;
 		internal readonly Vector128<short> ShortBit2X10Vector1;
-		private readonly Vector128<sbyte> SByte0 = Vector128.Create((sbyte)0);
 		private readonly Vector128<sbyte> SByteChat01 = Vector128.Create((sbyte)'0');
 		private readonly Vector128<sbyte> SByteN15 = Vector128.Create((sbyte)~15);
 		private readonly AsciiInterface AsciiInterface = AsciiInterface.Singleton;
