@@ -49,23 +49,38 @@ namespace Sunny.NetCore.Extension.Test
 		public void TestDateTime()
 		{
 			var dt = DateTime.Today;
-			var str = DateFormat.Singleton.DateTimeToString(dt);
-			Assert.IsTrue(DateFormat.Singleton.TryParseDateTime(str, out var ndt));
+			var str = DateTimeFormat.Singleton.DateTimeToString(dt);
+			Assert.IsTrue(DateTimeFormat.Singleton.TryParse(str, out var ndt));
 			Assert.AreEqual(dt, ndt);
 
 			dt = DateTime.UtcNow;
 			dt = new DateTime(dt.Ticks - (dt.Ticks % TimeSpan.TicksPerSecond));
-			str = DateFormat.Singleton.DateTimeToString(dt);
-			Assert.IsTrue(DateFormat.Singleton.TryParseDateTime(str, out ndt));
+			str = DateTimeFormat.Singleton.DateTimeToString(dt);
+			Assert.IsTrue(DateTimeFormat.Singleton.TryParse(str, out ndt));
 			Assert.AreEqual(dt, ndt);
 
-			Assert.IsFalse(DateFormat.Singleton.TryParseDateTime("2020-80-80", out ndt));
+			Assert.IsFalse(DateTimeFormat.Singleton.TryParse("2020-80-80", out ndt));
 
-			Assert.IsTrue(DateFormat.Singleton.TryParseDateTime("2020-8-8", out dt));
+			Assert.IsTrue(DateTimeFormat.Singleton.TryParse("2020-8-8", out dt));
 			Assert.AreEqual(dt, new DateTime(2020, 8, 8));
 
-			Assert.IsTrue(DateFormat.Singleton.TryParseDateTime("1608284353", out dt));
+			Assert.IsTrue(DateTimeFormat.Singleton.TryParse("1608284353", out dt));
 			Assert.AreEqual(dt, new DateTime(2020, 12, 18, 9, 39, 13));
+		}
+		[TestMethod]
+		public void TestDateOnly()
+		{
+			var dt = DateOnly.FromDateTime(DateTime.Today);
+			var str = DateOnlyFormat.Singleton.DateOnlyToString(dt);
+			Assert.IsTrue(DateOnlyFormat.Singleton.TryParse(str, out var ndt));
+			Assert.AreEqual(dt, ndt);
+
+
+			Assert.IsFalse(DateOnlyFormat.Singleton.TryParse("2020-80-80", out ndt));
+
+			Assert.IsTrue(DateOnlyFormat.Singleton.TryParse("2020-8-8", out dt));
+			Assert.AreEqual(dt, new DateOnly(2020, 8, 8));
+
 		}
 	}
 }

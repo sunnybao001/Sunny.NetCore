@@ -13,6 +13,7 @@ namespace Sunny.NetCore.Extension.TestC
 			TestLong();
 			TestGUID();
 			TestDateTime();
+			TestDateOnly();
 			//TestInt();
 			Console.ReadLine();
 		}
@@ -45,34 +46,60 @@ namespace Sunny.NetCore.Extension.TestC
 			sw.Stop();
 			Console.WriteLine("Sunny库转换耗时：" + sw.ElapsedMilliseconds.ToString());
 		}
-		public static void TestDateTime()
+		public unsafe static void TestDateTime()
 		{
 			var dt = DateTime.Today;
-			var str = DateFormat.Singleton.DateTimeToString(dt);
-			DateFormat.Singleton.TryParseDateTime(str, out var ndt);
+			var str = DateTimeFormat.Singleton.DateTimeToString(dt);
+			DateTimeFormat.Singleton.TryParse(str, out var ndt);
 			//Assert.AreEqual(dt, ndt);
 
 			dt = DateTime.UtcNow;
 			dt = new DateTime(dt.Ticks - (dt.Ticks % TimeSpan.TicksPerSecond));
-			str = DateFormat.Singleton.DateTimeToString(dt);
-			DateFormat.Singleton.TryParseDateTime(str, out ndt);
+			str = DateTimeFormat.Singleton.DateTimeToString(dt);
+			DateTimeFormat.Singleton.TryParse(str, out ndt);
 			//Assert.AreEqual(dt, ndt);
 
-			DateFormat.Singleton.TryParseDateTime("2020-8-8", out dt);
+			DateTimeFormat.Singleton.TryParse("2020-8-8", out dt);
 			//Assert.AreEqual(dt, new DateTime(2020, 8, 8));
 
+			var str1 = stackalloc char[20];
+			var span = new Span<char>(str1, 20);
 			dt = DateTime.UtcNow;
 			var sw = Stopwatch.StartNew();
 			for (var i = 0; i < 1000000; ++i)
 			{
-				dt = DateTime.Parse(dt.ToString());
+				if (!dt.TryFormat(span, out var length)) throw new Exception();
+				if (!DateTime.TryParse(span.Slice(0, length), out dt)) throw new Exception();
 			}
 			sw.Stop();
 			Console.WriteLine("DateTime自带转换耗时：" + sw.ElapsedMilliseconds.ToString());
 			sw.Restart();
 			for (var i = 0; i < 1000000; ++i)
 			{
-				if (!DateFormat.Singleton.TryParseDateTime(DateFormat.Singleton.DateTimeToString(dt), out dt)) throw new Exception();
+				if (!DateTimeFormat.Singleton.TryFormat(dt, span, out var length)) throw new Exception();
+				if (!DateTimeFormat.Singleton.TryParse(span.Slice(0, length), out dt)) throw new Exception();
+			}
+			sw.Stop();
+			Console.WriteLine("Sunny库转换耗时：" + sw.ElapsedMilliseconds.ToString());
+		}
+		public unsafe static void TestDateOnly()
+		{
+			var str = stackalloc char[20];
+			var span = new Span<char>(str, 20);
+			var date = DateOnly.FromDateTime(DateTime.Today);
+			var sw = Stopwatch.StartNew();
+			for (var i = 0; i < 1000000; ++i)
+			{
+				if (!date.TryFormat(span, out var length)) throw new Exception();
+				if (!DateOnly.TryParse(span.Slice(0, length), out date)) throw new Exception();
+			}
+			sw.Stop();
+			Console.WriteLine("DateOnly自带转换耗时：" + sw.ElapsedMilliseconds.ToString());
+			sw.Restart();
+			for (var i = 0; i < 1000000; ++i)
+			{
+				if (!DateOnlyFormat.Singleton.TryFormat(date, span, out var length)) throw new Exception();
+				if (!DateOnlyFormat.Singleton.TryParse(span.Slice(0, length), out date)) throw new Exception();
 			}
 			sw.Stop();
 			Console.WriteLine("Sunny库转换耗时：" + sw.ElapsedMilliseconds.ToString());
