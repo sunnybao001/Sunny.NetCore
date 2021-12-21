@@ -15,7 +15,7 @@ namespace Sunny.NetCore.Extension.Converter
 		{
 			if (reader.TokenType == JsonTokenType.String)
 			{
-				if (!System.Buffers.Text.Utf8Parser.TryParse(reader.ValueSpan, out decimal r, out _)) throw new FormatException("转换失败，输入的数据格式不是decimal类型，位置：" + reader.BytesConsumed.ToString());
+				if (!System.Buffers.Text.Utf8Parser.TryParse(reader.ValueSpan, out decimal r, out _)) throw new JsonException();
 				return r;
 			}
 			return reader.GetDecimal();

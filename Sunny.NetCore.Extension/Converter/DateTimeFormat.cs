@@ -24,7 +24,7 @@ namespace Sunny.NetCore.Extension.Converter
 		{
 			var s = reader.ValueSpan;
 			if (TryParseDateTime(s, out var value)) return value;
-			throw new ArgumentException("DateTime的格式不正确");
+			throw new JsonException();
 		}
 		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 		public override unsafe void Write(Utf8JsonWriter writer, DateTime value, JsonSerializerOptions options)

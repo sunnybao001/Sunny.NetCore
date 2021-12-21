@@ -64,7 +64,7 @@ namespace Sunny.NetCore.Extension.Converter
 		{
 			il.Emit(OpCodes.Ldarg_0);
 			il.Emit(OpCodes.Ldfld, guidField);
-			il.EmitCall(OpCodes.Call, GetMethodInfo<Guid, Guid, bool>((x, y) => x == y), null);
+			il.EmitCall(OpCodes.Call, typeof(Guid).GetMethod("op_Equality"), null);
 			var label = il.DefineLabel();
 			il.Emit(OpCodes.Brfalse_S, label);
 			il.Emit(OpCodes.Ldarg_0);

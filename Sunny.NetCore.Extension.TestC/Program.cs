@@ -6,15 +6,18 @@ namespace Sunny.NetCore.Extension.TestC
 {
 	class Program
 	{
-		static void Main(string[] args)
+		static unsafe void Main(string[] args)
 		{
 			Console.WriteLine("Hello World!");
+
 
 			TestLong();
 			TestGUID();
 			TestDateTime();
 			TestDateOnly();
+			TestHex();
 			//TestInt();
+			Console.ReadLine();
 			Console.ReadLine();
 		}
 		public static void TestGUID()
@@ -103,7 +106,6 @@ namespace Sunny.NetCore.Extension.TestC
 			}
 			sw.Stop();
 			Console.WriteLine("Sunny库转换耗时：" + sw.ElapsedMilliseconds.ToString());
-			Console.ReadLine();
 		}
 		public static void TestInt()
 		{
@@ -131,6 +133,26 @@ namespace Sunny.NetCore.Extension.TestC
 			for (var i = 0; i < 1000000; ++i)
 			{
 				if (!@interface.TryParse(@interface.LongToString(l), out l)) throw new Exception();
+			}
+			sw.Stop();
+			Console.WriteLine("Sunny库转换耗时：" + sw.ElapsedMilliseconds.ToString());
+		}
+		public static void TestHex()
+		{
+			var buffer = new byte[32];
+			Random.Shared.NextBytes(buffer);
+			var @interface = new HexInterface();
+			var sw = Stopwatch.StartNew();
+			for (var i = 0; i < 1000000; ++i)
+			{
+				Convert.ToHexString(buffer);
+			}
+			sw.Stop();
+			Console.WriteLine("Convert自带转换耗时：" + sw.ElapsedMilliseconds.ToString());
+			sw.Restart();
+			for (var i = 0; i < 1000000; ++i)
+			{
+				@interface.BytesToString(buffer);
 			}
 			sw.Stop();
 			Console.WriteLine("Sunny库转换耗时：" + sw.ElapsedMilliseconds.ToString());

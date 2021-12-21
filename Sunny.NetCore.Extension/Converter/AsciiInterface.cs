@@ -22,11 +22,6 @@ namespace Sunny.NetCore.Extension.Converter
 		{
 			return Avx2.Permute4x64(Avx2.PackUnsignedSaturate(Avx2.And(input, AsciiMax), Avx2.And(Unsafe.Add(ref input, 1), AsciiMax)).AsInt64(), 0b1101_1000).AsByte();
 		}
-		//[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		//public unsafe Vector256<short> AsciiToUnicode(in Vector128<byte> input)
-		//{
-		//	return Avx2.ConvertToVector256Int16(input);
-		//}
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public static unsafe void AsciiToUnicode(Vector256<byte> input, ref Vector256<short> output)
 		{
@@ -34,7 +29,14 @@ namespace Sunny.NetCore.Extension.Converter
 			Unsafe.Add(ref output, 1) = Avx2.ConvertToVector256Int16(Avx2.ExtractVector128(input, 1));
 		}
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		public static unsafe void AsciiToUnicode(Vector128<byte> input, ref Vector256<short> output)
+		{
+			output = Avx2.ConvertToVector256Int16(input);
+		}
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public static ref TR StringTo<T, TR>(ReadOnlySpan<T> str) => ref Unsafe.As<T, TR>(ref Unsafe.AsRef(in str.GetPinnableReference()));
+		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
+		public static ref TR StringTo<T, TR>(Span<T> str) => ref Unsafe.As<T, TR>(ref str.GetPinnableReference());
 		private Vector256<short> AsciiMax = Vector256.Create((short)sbyte.MaxValue);
 		public static readonly System.Reflection.Emit.ModuleBuilder ModuleBuilder = System.Reflection.Emit.AssemblyBuilder.DefineDynamicAssembly(new System.Reflection.AssemblyName("Sunny.NetCore.Extrnsion.Emit"), System.Reflection.Emit.AssemblyBuilderAccess.Run).DefineDynamicModule("Converter");
 		internal Func<int, string> FastAllocateString = (Func<int, string>)typeof(string).GetMethod("FastAllocateString", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static).CreateDelegate(typeof(Func<int, string>));
