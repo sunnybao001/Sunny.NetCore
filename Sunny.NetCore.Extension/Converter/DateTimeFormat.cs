@@ -17,7 +17,13 @@ namespace Sunny.NetCore.Extension.Converter
         {
 			// 由于循环依赖，所以只能先传出指针
 			Singleton = this;
+#if NET6_0_OR_GREATER
 			DateOnlyF = DateOnlyFormat.Singleton;
+#else
+			ShortChar01 = ShortChar0.GetLower();
+			Int101 = Int10.GetLower();
+			ShortN151 = ShortN15.GetLower();
+#endif
 		}
 		[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 		public override unsafe DateTime Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
@@ -71,7 +77,11 @@ namespace Sunny.NetCore.Extension.Converter
 		[MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
 		private unsafe bool TryParseDateTime(ReadOnlySpan<byte> input, out DateTime value)
 		{
+#if NET5_0_OR_GREATER
 			Unsafe.SkipInit(out value);
+#else
+			value = default;
+#endif
 			bool success = true;
 			if (input.Length == 19 | input.Length == 20) return Utf8_19ToDate(in AsciiInterface.StringTo<byte, Vector256<sbyte>>(input), out value);
 			if (input.Length == 10 | input.Length == 11)
@@ -84,8 +94,12 @@ namespace Sunny.NetCore.Extension.Converter
 					value = new DateTime(1970, 1, 1).AddTicks(TimeSpan.TicksPerSecond * lv);
 					return true;
 				}
-				var r = DateOnlyF.Utf8_10ToDate(in v128, out var v0);
+#if NET6_0_OR_GREATER
+				var r = DateOnlyF.Utf8_10ToDate(v128, out var v0);
 				value = v0.ToDateTime(default);
+#else
+				var r = Utf8_10ToDate(v128, out value);
+#endif
 				return r;
 			}
 			if (input.Length < 10 & input.Length > 7)
@@ -129,7 +143,31 @@ namespace Sunny.NetCore.Extension.Converter
 		private readonly Vector128<sbyte> SByteChat01 = Vector128.Create((sbyte)'0');
 		private readonly Vector128<sbyte> SByteN15 = Vector128.Create((sbyte)~15);
 		private readonly AsciiInterface AsciiInterface = AsciiInterface.Singleton;
+#if NET6_0_OR_GREATER
 		private readonly DateOnlyFormat DateOnlyF;
+#else
+		[MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
+		internal unsafe bool Utf8_10ToDate(Vector128<sbyte> input, out DateTime value)
+		{
+			var vector = Sse2.Subtract(Sse41.ConvertToVector128Int16(Ssse3.Shuffle(input, TDShuffleMask1)), this.ShortChar01);
+			var v = Ssse3.HorizontalAdd(Sse2.MultiplyLow(vector, this.Int101), Vector128<short>.Zero).AsUInt16();
+			var v2 = Avx.Or(Sse2.Or(Sse2.CompareLessThan(Max, v.AsInt16()), Sse2.CompareLessThan(v.AsInt16(), Min)).AsInt16(), Sse2.And(vector, this.ShortN151));     //此处最大宽度128，使用or比使用insert更快
+			if (!Sse41.TestZ(v2, v2))
+			{
+				value = default;
+				return false;
+			}
+			var year = Sse2.Extract(v, 0) + Sse2.Extract(v, 1);
+			var month = Sse2.Extract(v, 2);
+			var day = Sse2.Extract(v, 3);
+			value = new DateTime(year, month, day);    //寄存器优化
+			return true;
+		}
+		private readonly Vector128<sbyte> TDShuffleMask1 = Vector128.Create(0, 1, 2, 3, 5, 6, 8, 9, -1, -1, -1, -1, -1, -1, -1, -1);
+		private readonly Vector128<short> ShortChar01;
+		private readonly Vector128<short> Int101;
+		private readonly Vector128<short> ShortN151;
+#endif
 
 		[MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
 		private unsafe Vector256<byte> DateTimeToUtf8_19(DateTime value)

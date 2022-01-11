@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 
 namespace Sunny.NetCore.Extension.Converter
 {
+#if NET6_0_OR_GREATER
 	public sealed partial class DateOnlyFormat : System.Text.Json.Serialization.JsonConverter<DateOnly>
 	{
 		public static DateOnlyFormat Singleton { get; private set; }
@@ -89,7 +90,7 @@ namespace Sunny.NetCore.Extension.Converter
 					value = new DateOnly(1970, 1, 1).AddDays((int)(TimeSpan.TicksPerSecond * lv / TimeSpan.TicksPerDay));
 					return true;
 				}
-				return Utf8_10ToDate(in v128, out value);
+				return Utf8_10ToDate(v128, out value);
 			}
 			if (input.Length < 10 & input.Length > 7)
 			{
@@ -155,7 +156,7 @@ namespace Sunny.NetCore.Extension.Converter
 		private readonly Vector128<sbyte> TUShuffleMask1 = Vector128.Create(0, 1, 2, 3, 8, 4, 5, 8, 6, 7, -1, -1, -1, -1, -1, -1);
 
 		[MethodImpl(MethodImplOptions.AggressiveOptimization | MethodImplOptions.AggressiveInlining)]
-		internal unsafe bool Utf8_10ToDate(in Vector128<sbyte> input, out DateOnly value)
+		internal unsafe bool Utf8_10ToDate(Vector128<sbyte> input, out DateOnly value)
 		{
 			var vector = Sse2.Subtract(Sse41.ConvertToVector128Int16(Ssse3.Shuffle(input, TDShuffleMask1)), this.ShortChar01);
 			var v = Ssse3.HorizontalAdd(Sse2.MultiplyLow(vector, this.Int101), Vector128<short>.Zero).AsUInt16();
@@ -177,4 +178,5 @@ namespace Sunny.NetCore.Extension.Converter
 		private readonly Vector128<short> Min = Vector128.Create(0, 0, 1, 1, 0, 0, 0, 0);
 		internal readonly Vector128<short> ShortN151;
 	}
+#endif
 }

@@ -141,7 +141,7 @@ namespace Sunny.NetCore.Extension.TestC
 		{
 			var buffer = new byte[32];
 			Random.Shared.NextBytes(buffer);
-			var @interface = new HexInterface();
+			var @interface = HexInterface.Singleton;
 			var sw = Stopwatch.StartNew();
 			for (var i = 0; i < 1000000; ++i)
 			{

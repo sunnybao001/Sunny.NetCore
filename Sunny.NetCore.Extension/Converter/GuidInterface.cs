@@ -60,7 +60,11 @@ namespace Sunny.NetCore.Extension.Converter
 			var vector = Avx2.Subtract(input, ShortCharA);
 			var r = Avx.TestZ(vector, ShortN15);
 			vector = Avx2.And(Avx2.Or(Avx2.ShiftLeftLogical(vector, 4), Avx2.ShiftRightLogical(vector, 8)), FFMask);
+#if NET5_0_OR_GREATER
 			Unsafe.SkipInit(out value);
+#else
+			value = default;
+#endif
 			Unsafe.As<Guid, Vector128<byte>>(ref value) = Sse2.PackUnsignedSaturate(Avx2.ExtractVector128(vector, 0), Avx2.ExtractVector128(vector, 1));
 			return r;
 		}
