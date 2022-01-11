@@ -82,5 +82,13 @@ namespace Sunny.NetCore.Extension.Test
 			Assert.AreEqual(dt, new DateOnly(2020, 8, 8));
 
 		}
+		[TestMethod]
+		public void TestLock()
+		{
+			var l = new Threading.AsyncLock(3);
+			Assert.IsTrue(l.TryLock(out var releaser));
+			Assert.IsTrue(l.TryLock(out releaser));
+			Assert.IsFalse(l.TryLock(out releaser));
+		}
 	}
 }

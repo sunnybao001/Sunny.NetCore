@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Sunny.NetCore.Extension.Threading
 {
-    public class AsyncLock
+    public sealed class AsyncLock
     {
         private readonly AsyncSemaphore m_semaphore;
         private readonly Task<Releaser> m_releaser;
@@ -38,7 +38,7 @@ namespace Sunny.NetCore.Extension.Threading
             releaser = taken ? m_releaser.Result : default;
             return taken;
         }
-        public struct Releaser : IDisposable
+        public readonly struct Releaser : IDisposable
         {
             private readonly AsyncLock m_toRelease;
 
@@ -105,7 +105,7 @@ namespace Sunny.NetCore.Extension.Threading
         }
         class AsyncSemaphoreConcurrency : AsyncSemaphore
 		{
-            public AsyncSemaphoreConcurrency(int count) : base(count)
+            public AsyncSemaphoreConcurrency(int count) : base(count + 1)
             {
             }
             public override Task WaitAsync()
