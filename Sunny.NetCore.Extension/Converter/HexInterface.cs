@@ -90,11 +90,14 @@ namespace Sunny.NetCore.Extension.Converter
 				strSite = ref Unsafe.Add(ref strSite, 2);
 			}
 			int offset = 0;
-			for (; offset + 16 <= value.Length; offset += 16)
+			if (Avx2.IsSupported)
 			{
-				var vector = Byte16ToUtf8_32(Unsafe.As<byte, Vector128<byte>>(ref value[offset])).AsByte();
-				AsciiInterface.AsciiToUnicode(vector, ref Unsafe.As<char, Vector256<short>>(ref strSite));
-				strSite = ref Unsafe.Add(ref strSite, 16 * 2);
+				for (; offset + 16 <= value.Length; offset += 16)
+				{
+					var vector = Byte16ToUtf8_32(Unsafe.As<byte, Vector128<byte>>(ref value[offset])).AsByte();
+					AsciiInterface.AsciiToUnicode(vector, ref Unsafe.As<char, Vector256<short>>(ref strSite));
+					strSite = ref Unsafe.Add(ref strSite, 16 * 2);
+				}
 			}
 			for (; offset + 8 <= value.Length; offset += 8)
 			{

@@ -8,7 +8,7 @@
     <Copyright>Copyright © SUNNY 2020</Copyright>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageTags>X86 SIMD</PackageTags>
-    <Version>1.2.1</Version>
+    <Version>1.2.2</Version>
     <PackageProjectUrl></PackageProjectUrl>
     <RepositoryUrl>https://github.com/sunnybao001/Sunny.NetCore</RepositoryUrl>
     <Platforms>AnyCPU</Platforms>

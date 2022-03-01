@@ -8,6 +8,7 @@ namespace Sunny.NetCore.Extension.TestC
 	{
 		static unsafe void Main(string[] args)
 		{
+			var r = System.Runtime.Intrinsics.X86.Sse2.Shuffle(System.Runtime.Intrinsics.Vector128.Create(0, 1, 2, 3), 0b0100_1110);
 			Console.WriteLine("Hello World!");
 
 

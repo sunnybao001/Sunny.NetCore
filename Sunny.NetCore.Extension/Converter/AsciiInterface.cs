@@ -31,7 +31,16 @@ namespace Sunny.NetCore.Extension.Converter
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public static unsafe void AsciiToUnicode(Vector128<byte> input, ref Vector256<short> output)
 		{
-			output = Avx2.ConvertToVector256Int16(input);
+			if (Avx2.IsSupported)
+			{
+				output = Avx2.ConvertToVector256Int16(input);
+			}
+			else
+			{
+				var v0 = Sse41.ConvertToVector128Int16(input);
+				var v1 = Sse41.ConvertToVector128Int16(Sse2.Shuffle(input.AsInt32(), 0b0100_1110).AsByte());
+				output = Vector256.Create(v0, v1);
+			}
 		}
 		[MethodImpl(MethodImplOptions.AggressiveInlining | MethodImplOptions.AggressiveOptimization)]
 		public static ref TR StringTo<T, TR>(ReadOnlySpan<T> str) => ref Unsafe.As<T, TR>(ref Unsafe.AsRef(in str.GetPinnableReference()));

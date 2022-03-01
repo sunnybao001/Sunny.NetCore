@@ -85,7 +85,7 @@ namespace Sunny.NetCore.Extension.Test
 		[TestMethod]
 		public void TestLock()
 		{
-			var l = new Threading.AsyncLock(3);
+			var l = new Threading.AsyncLock(2);
 			Assert.IsTrue(l.TryLock(out var releaser));
 			Assert.IsTrue(l.TryLock(out releaser));
 			Assert.IsFalse(l.TryLock(out releaser));
